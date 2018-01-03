@@ -33,7 +33,7 @@ namespace System.Net.WebSockets
         /// <param name="isServer">true if this is the server-side of the connection; false if this is the client-side of the connection.</param>
         /// <param name="subprotocol">The agreed upon subprotocol for the connection.</param>
         /// <param name="keepAliveInterval">The interval to use for keep-alive pings.</param>
-        /// <param name="buffer">The buffer to use for received data.</param>
+        /// <param name="buffer">An optional buffer to use for received data.</param>
         /// <returns>The created <see cref="ManagedWebSocket"/> instance.</returns>
         public static ManagedWebSocket CreateFromConnectedStream(
             Stream stream, bool isServer, string subprotocol, TimeSpan keepAliveInterval, Memory<byte> buffer)
@@ -170,8 +170,7 @@ namespace System.Net.WebSockets
         /// <param name="isServer">true if this is the server-side of the connection; false if this is the client-side of the connection.</param>
         /// <param name="subprotocol">The agreed upon subprotocol for the connection.</param>
         /// <param name="keepAliveInterval">The interval to use for keep-alive pings.</param>
-        /// <param name="receiveBufferSize">The buffer size to use for received data.</param>
-        /// <param name="buffer">Optional buffer to use for receives</param>
+        /// <param name="buffer">An optional buffer to use for received data.</param>
         private ManagedWebSocket(Stream stream, bool isServer, string subprotocol, TimeSpan keepAliveInterval, Memory<byte> buffer)
         {
             Debug.Assert(StateUpdateLock != null, $"Expected {nameof(StateUpdateLock)} to be non-null");
