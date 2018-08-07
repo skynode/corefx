@@ -1,40 +1,33 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{4BBC8F69-D03E-4432-AA8A-D458FA5B235A}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">true</IsPartialFacadeAssembly>
-    <DefineConstants Condition="'$(IsPartialFacadeAssembly)' != 'true'">$(DefineConstants);netstandard</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.1'">$(DefineConstants);netstandard11</DefineConstants>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="System\MemoryExtensions.cs" />
-    <Compile Include="System\SpanHelpers.BinarySearch.cs" />
-    <Compile Include="System\SpanHelpers.T.cs" />
-    <Compile Include="System\SpanHelpers.byte.cs" />
+    <Compile Include="System\SequencePosition.cs" />
     <Compile Include="System\ThrowHelper.cs" />
+    <Compile Include="System\Buffers\ArrayMemoryPool.cs" />
+    <Compile Include="System\Buffers\ArrayMemoryPool.ArrayMemoryPoolBuffer.cs" />
+    <Compile Include="System\Buffers\BuffersExtensions.cs" />
+    <Compile Include="System\Buffers\IBufferWriter.cs" />
+    <Compile Include="System\Buffers\MemoryPool.cs" />
     <Compile Include="System\Buffers\OperationStatus.cs" />
+    <Compile Include="System\Buffers\ReadOnlySequence.cs" />
+    <Compile Include="System\Buffers\ReadOnlySequenceDebugView.cs" />
+    <Compile Include="System\Buffers\ReadOnlySequenceSegment.cs" />
+    <Compile Include="System\Buffers\ReadOnlySequence_helpers.cs" />
     <Compile Include="System\Buffers\Binary\Reader.cs" />
     <Compile Include="System\Buffers\Binary\ReaderBigEndian.cs" />
     <Compile Include="System\Buffers\Binary\ReaderLittleEndian.cs" />
-    <Compile Include="System\Buffers\Binary\Writer.cs" />
     <Compile Include="System\Buffers\Binary\WriterBigEndian.cs" />
     <Compile Include="System\Buffers\Binary\WriterLittleEndian.cs" />
     <Compile Include="System\Buffers\Text\Base64Decoder.cs" />
     <Compile Include="System\Buffers\Text\Base64Encoder.cs" />
+    <Compile Include="System\Runtime\InteropServices\SequenceMarshal.cs" />
   </ItemGroup>
   <!-- Utf8 Formatter/Parser -->
   <ItemGroup>
@@ -88,6 +81,7 @@
     <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.cs" />
     <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.LittleG.cs" />
     <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpanSplitter.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
   </ItemGroup>
   <!-- Double/Decimal format/parser logic copied (almost verbatim) over from CoreRT -->
   <ItemGroup>
@@ -97,49 +91,35 @@
     <Compile Include="System\Number\Number.NumberBuffer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Common\src\System\MutableDecimal.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="System\ReadOnlySpan.cs" />
-    <Compile Include="System\Span.cs" />
-    <Compile Include="System\SpanDebugView.cs" />
-    <Compile Include="System\MemoryExtensions.Portable.cs" />
-    <Compile Include="System\SpanHelpers.cs" />
-    <Compile Include="System\Pinnable.cs" />
-    <Compile Include="System\SpanHelpers.Clear.cs" />
-    <Compile Include="System\Memory.cs" />
-    <Compile Include="System\MemoryDebugView.cs" />
-    <Compile Include="System\ReadOnlyMemory.cs" />
-    <Compile Include="System\Buffers\IRetainable.cs" />
-    <Compile Include="System\Buffers\MemoryHandle.cs" />
-    <Compile Include="System\Buffers\OwnedMemory.cs" />
-    <Compile Include="System\Runtime\InteropServices\MemoryMarshal.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <!-- Common or Common-branched source files -->
+    <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
+      <Link>Common\System\Collections\HashHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\MutableDecimal.cs">
+      <Link>Common\System\MutableDecimal.cs</Link>
+    </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Globalization" />
-    <Reference Include="System.Reflection" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Condition="'$(TargetGroup)' != 'netstandard1.1'" Include="System.Numerics.Vectors" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
-    <Compile Include="System\MemoryExtensions.Fast.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
+  <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
     <ProjectReference Include="..\..\System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <ItemGroup>
+    <None Include="$(CommonPath)\CoreLib\System\MemoryExtensions.Fast.cs">
+      <Link>System\MemoryExtensions.Fast.cs</Link>
+    </None>
+    <None Include="$(CommonPath)\CoreLib\System\Runtime\InteropServices\MemoryMarshal.Fast.cs">
+      <Link>System\Runtime\InteropServices\MemoryMarshal.Fast.cs</Link>
+    </None>
+    <None Include="$(CommonPath)\CoreLib\System\ReadOnlySpan.Fast.cs">
+      <Link>System\ReadOnlySpan.Fast.cs</Link>
+    </None>
+    <None Include="$(CommonPath)\CoreLib\System\Span.Fast.cs">
+      <Link>System\Span.Fast.cs</Link>
+    </None>
+  </ItemGroup>
 </Project>

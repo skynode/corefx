@@ -17,6 +17,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static readonly Type s_tdsParserStateObjectFactory = s_systemDotData?.GetType("System.Data.SqlClient.TdsParserStateObjectFactory");
         private static readonly PropertyInfo s_useManagedSNI = s_tdsParserStateObjectFactory?.GetProperty("UseManagedSNI", BindingFlags.Static | BindingFlags.Public);
 
+        private static readonly string[] s_azureSqlServerEndpoints = {".database.windows.net",
+                                                                     ".database.cloudapi.de",
+                                                                     ".database.usgovcloudapi.net",
+                                                                     ".database.chinacloudapi.cn"};
         static DataTestUtility()
         {
             NpConnStr = Environment.GetEnvironmentVariable("TEST_NP_CONN_STR");
@@ -60,15 +64,43 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return name;
         }
 
-        public static bool IsLocalDBInstalled()
+        public static bool IsLocalDBInstalled() => int.TryParse(Environment.GetEnvironmentVariable("TEST_LOCALDB_INSTALLED"), out int result) ? result == 1 : false;
+
+        public static bool IsIntegratedSecuritySetup() => int.TryParse(Environment.GetEnvironmentVariable("TEST_INTEGRATEDSECURITY_SETUP"), out int result) ? result == 1 : false;
+
+        public static string getAccessToken()
         {
-            string localDBInstallationFlag = Environment.GetEnvironmentVariable("TEST_LOCALDB_INSTALLED");
-            if (!string.IsNullOrWhiteSpace(localDBInstallationFlag))
+            return Environment.GetEnvironmentVariable("TEST_ACCESSTOKEN_SETUP");
+        }
+
+        public static bool IsAccessTokenSetup() => string.IsNullOrEmpty(getAccessToken()) ? false : true;
+        
+        public static bool IsFileStreamSetup() => int.TryParse(Environment.GetEnvironmentVariable("TEST_FILESTREAM_SETUP"), out int result) ? result == 1 : false;
+
+        // This method assumes dataSource parameter is in TCP connection string format.
+        public static bool IsAzureSqlServer(string dataSource)
+        {
+            int i = dataSource.LastIndexOf(',');
+            if (i >= 0)
             {
-                int result;
-                if (int.TryParse(localDBInstallationFlag.Trim(), out result))
+                dataSource = dataSource.Substring(0, i);
+            }
+
+            i = dataSource.LastIndexOf('\\');
+            if (i >= 0)
+            {
+                dataSource = dataSource.Substring(0, i);
+            }
+
+            // trim redundant whitespace
+            dataSource = dataSource.Trim();
+
+            // check if servername end with any azure endpoints
+            for (i = 0; i < s_azureSqlServerEndpoints.Length; i++)
+            {
+                if (dataSource.EndsWith(s_azureSqlServerEndpoints[i], StringComparison.OrdinalIgnoreCase))
                 {
-                    return result == 1;
+                    return true;
                 }
             }
             return false;
@@ -151,7 +183,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return ex;
         }
 
-        public static TException ExpectFailure<TException>(Action actionThatFails, string exceptionMessage = null, bool innerExceptionMustBeNull = false, Func<TException, bool> customExceptionVerifier = null) where TException : Exception
+        public static TException ExpectFailure<TException>(Action actionThatFails, string[] exceptionMessages, bool innerExceptionMustBeNull = false, Func<TException, bool> customExceptionVerifier = null) where TException : Exception
         {
             try
             {
@@ -161,14 +193,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
             catch (Exception ex)
             {
-                if ((CheckException<TException>(ex, exceptionMessage, innerExceptionMustBeNull)) && ((customExceptionVerifier == null) || (customExceptionVerifier(ex as TException))))
+                foreach (string exceptionMessage in exceptionMessages)
                 {
-                    return (ex as TException);
+                    if ((CheckException<TException>(ex, exceptionMessage, innerExceptionMustBeNull)) && ((customExceptionVerifier == null) || (customExceptionVerifier(ex as TException))))
+                    {
+                        return (ex as TException);
+                    }
                 }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
         }
 

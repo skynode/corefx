@@ -12,7 +12,7 @@ namespace System
     {
         internal const long Invalid = -1;
         // Note: the native parser cannot handle MaxIPv4Value, only MaxIPv4Value - 1
-        private const long MaxIPv4Value = UInt32.MaxValue;
+        private const long MaxIPv4Value = uint.MaxValue;
         private const int Octal = 8;
         private const int Decimal = 10;
         private const int Hex = 16;
@@ -27,7 +27,18 @@ namespace System
             {
                 byte* numbers = stackalloc byte[NumberOfLabels];
                 isLoopback = Parse(str, numbers, start, end);
-                return numbers[0] + "." + numbers[1] + "." + numbers[2] + "." + numbers[3];
+
+                Span<char> stackSpace = stackalloc char[NumberOfLabels * 3 + 3];
+                int totalChars = 0, charsWritten;
+                for (int i = 0; i < 3; i++)
+                {
+                    numbers[i].TryFormat(stackSpace.Slice(totalChars), out charsWritten);
+                    int periodPos = totalChars + charsWritten;
+                    stackSpace[periodPos] = '.';
+                    totalChars = periodPos + 1;
+                }
+                numbers[3].TryFormat(stackSpace.Slice(totalChars), out charsWritten);
+                return new string(stackSpace.Slice(0, totalChars + charsWritten));
             }
         }
 
@@ -184,7 +195,7 @@ namespace System
         {
             int numberBase = Decimal;
             char ch;
-            long[] parts = new long[4];
+            Span<long> parts = stackalloc long[4];
             long currentValue = 0;
             bool atLeastOneChar = false;
 

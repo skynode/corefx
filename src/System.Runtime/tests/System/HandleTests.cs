@@ -16,7 +16,16 @@ public static class HandleTests
         Type t = typeof(Derived);
         FieldInfo f = t.GetField(nameof(Base.MyField));
         RuntimeFieldHandle h = f.FieldHandle;
-        Assert.True(h.Value != null);
+        Assert.True(h.Value != IntPtr.Zero);
+    }
+
+    [Fact]
+    public static void DefaultRuntimeFieldHandleHashCodeTest()
+    {
+        RuntimeFieldHandle rfh1 = new RuntimeFieldHandle();
+        RuntimeFieldHandle rfh2 = new RuntimeFieldHandle();
+
+        Assert.Equal(rfh1.GetHashCode(), rfh2.GetHashCode());
     }
 
     [Fact]
@@ -25,6 +34,15 @@ public static class HandleTests
         MethodInfo mi1 = typeof(Base).GetMethod(nameof(Base.MyMethod));
         MethodInfo mi2 = (MethodInfo)MethodBase.GetMethodFromHandle(mi1.MethodHandle);
         Assert.Equal(mi1, mi2);
+    }
+
+    [Fact]
+    public static void DefaultRuntimeMethodHandleHashCodeTest()
+    {
+        RuntimeMethodHandle rmh1 = new RuntimeMethodHandle();
+        RuntimeMethodHandle rmh2 = new RuntimeMethodHandle();
+
+        Assert.Equal(rmh1.GetHashCode(), rmh2.GetHashCode());
     }
 
     [Fact]

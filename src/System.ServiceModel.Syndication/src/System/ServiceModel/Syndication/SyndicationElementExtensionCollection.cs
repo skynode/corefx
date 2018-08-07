@@ -71,8 +71,9 @@ namespace System.ServiceModel.Syndication
         {
             if (dataContractExtension == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("dataContractExtension");
+                throw new ArgumentNullException(nameof(dataContractExtension));
             }
+
             if (dataContractSerializer == null)
             {
                 dataContractSerializer = new DataContractSerializer(dataContractExtension.GetType());
@@ -84,8 +85,9 @@ namespace System.ServiceModel.Syndication
         {
             if (xmlSerializerExtension == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("xmlSerializerExtension");
+                throw new ArgumentNullException(nameof(xmlSerializerExtension));
             }
+
             if (serializer == null)
             {
                 serializer = new XmlSerializer(xmlSerializerExtension.GetType());
@@ -97,8 +99,9 @@ namespace System.ServiceModel.Syndication
         {
             if (xmlReader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("xmlReader");
+                throw new ArgumentNullException(nameof(xmlReader));
             }
+
             base.Add(new SyndicationElementExtension(xmlReader));
         }
 
@@ -119,8 +122,9 @@ namespace System.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("serializer");
+                throw new ArgumentNullException(nameof(serializer));
             }
+
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, serializer, null);
         }
 
@@ -128,12 +132,13 @@ namespace System.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("serializer");
+                throw new ArgumentNullException(nameof(serializer));
             }
+
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, null, serializer);
         }
 
-        internal void WriteTo(XmlWriter writer)
+        internal void WriteTo(XmlWriter writer, Func<string, string, bool> shouldSkipElement)
         {
             if (_buffer != null)
             {
@@ -142,6 +147,12 @@ namespace System.ServiceModel.Syndication
                     reader.ReadStartElement();
                     while (reader.IsStartElement())
                     {
+                        if (shouldSkipElement != null && shouldSkipElement(reader.LocalName, reader.NamespaceURI))
+                        {
+                            reader.Skip();
+                            continue;
+                        }
+
                         writer.WriteNode(reader, false);
                     }
                 }
@@ -169,8 +180,9 @@ namespace System.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw new ArgumentNullException(nameof(item));
             }
+
             base.InsertItem(index, item);
             // clear the cached buffer if the operation is happening outside the constructor
             if (_initialized)
@@ -193,8 +205,9 @@ namespace System.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw new ArgumentNullException(nameof(item));
             }
+
             base.SetItem(index, item);
             // clear the cached buffer if the operation is happening outside the constructor
             if (_initialized)
@@ -244,8 +257,9 @@ namespace System.ServiceModel.Syndication
         {
             if (string.IsNullOrEmpty(extensionName))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(SR.Format(SR.ExtensionNameNotSpecified));
+                throw new ArgumentException(SR.ExtensionNameNotSpecified);
             }
+
             Debug.Assert((dcSerializer == null) != (xmlSerializer == null), "exactly one serializer should be supplied");
             // normalize the null and empty namespace
             if (extensionNamespace == null)

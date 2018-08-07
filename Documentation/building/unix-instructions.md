@@ -56,6 +56,14 @@ Ubuntu 16.10 and Ubuntu 17.04 will require libicu57.
 
 `sudo apt-get install libunwind8 libicu55 curl`
 
+For Ubuntu 18.04, you will also need to replace libicu52 with libicu60 and install libssl1.0-dev_1.0.2n-1ubuntu5.1_amd64.deb with dpkg-deb.
+
+```sh
+sudo apt-get install libunwind8 libicu60 curl
+apt-get download libssl1.0-dev
+sudo dpkg-deb -X libssl1.0-dev_1.0.2n-1ubuntu5.1_amd64.deb /
+```
+
 In addition to the above packages, the runtime versions of the packages listed
 in the native section should also be installed (this happens automatically on
 most systems when you install the development packages).
@@ -100,6 +108,25 @@ ln -s /usr/local/opt/openssl/lib/libssl.1.0.0.dylib /usr/local/lib/
 ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
 ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
 ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
+```
+
+Alternatively, to avoid modifying /usr/local/ you can invoke cmake with the `OPENSSL_ROOT_DIR` env var set. The value to be passed in the directory where openssl is installed. Use `brew info openssl` to determine it. For example:
+
+```
+$brew info openssl
+openssl: stable 1.0.2l (bottled) [keg-only]
+SSL/TLS cryptography library
+https://openssl.org/
+/usr/local/Cellar/openssl/1.0.1f (1,229 files, 10.8MB)
+  Poured from bottle on 2014-01-20 at 19:25:30
+/usr/local/Cellar/openssl/1.0.1g (1,229 files, 10.6MB)
+  Poured from bottle on 2014-04-07 at 11:26:41
+```
+
+With the above example, we'd pick the latest version `1.0.1g` and invoke cmake like the following:
+
+```
+OPENSSL_ROOT_DIR="/usr/local/Cellar/openssl/1.0.1g cmake
 ```
 
 ### Known Issues

@@ -11,8 +11,6 @@ using System.Diagnostics.Contracts;
 using System.Threading;
 using Microsoft.Internal;
 
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(destination: typeof(System.Lazy<,>))]
-
 namespace System.ComponentModel.Composition.Hosting
 {
     public partial class CompositionContainer : ExportProvider, ICompositionService, IDisposable
@@ -31,7 +29,7 @@ namespace System.ComponentModel.Composition.Hosting
         private readonly ReadOnlyCollection<ExportProvider> _providers;
         private volatile bool _isDisposed = false;
         private object _lock = new object();
-        private static ReadOnlyCollection<ExportProvider> EmptyProviders = new ReadOnlyCollection<ExportProvider>(new ExportProvider[]{});
+        private static ReadOnlyCollection<ExportProvider> EmptyProviders = new ReadOnlyCollection<ExportProvider>(Array.Empty<ExportProvider>());
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class.
@@ -139,7 +137,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if (compositionOptions > (CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService))
             {
-                throw new ArgumentOutOfRangeException("compositionOptions");
+                throw new ArgumentOutOfRangeException(nameof(compositionOptions));
             }
             _compositionOptions = compositionOptions;
 
@@ -178,7 +176,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (providers[0] == null)
                     {
-                        throw ExceptionBuilder.CreateContainsNullElement("providers");
+                        throw ExceptionBuilder.CreateContainsNullElement(nameof(providers));
                     }
                     _ancestorExportProvider = providers[0];
                 }
@@ -474,7 +472,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </exception>
         public void ReleaseExports(IEnumerable<Export> exports)
         {
-            Requires.NotNullOrNullElements(exports, "exports");
+            Requires.NotNullOrNullElements(exports, nameof(exports));
 
             foreach (Export export in exports)
             {
@@ -496,7 +494,7 @@ namespace System.ComponentModel.Composition.Hosting
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public void ReleaseExports<T>(IEnumerable<Lazy<T>> exports)
         {
-            Requires.NotNullOrNullElements(exports, "exports");
+            Requires.NotNullOrNullElements(exports, nameof(exports));
 
             foreach (Lazy<T> export in exports)
             {
@@ -518,7 +516,7 @@ namespace System.ComponentModel.Composition.Hosting
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public void ReleaseExports<T, TMetadataView>(IEnumerable<Lazy<T, TMetadataView>> exports)
         {
-            Requires.NotNullOrNullElements(exports, "exports");
+            Requires.NotNullOrNullElements(exports, nameof(exports));
 
             foreach (Lazy<T, TMetadataView> export in exports)
             {
@@ -612,11 +610,17 @@ namespace System.ComponentModel.Composition.Hosting
             switch((ImportSource)source)
             {
                 case ImportSource.Any:
-                    Assumes.NotNull(_rootProvider);
+                    if (_rootProvider == null)
+                    {
+                        throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                    }
                     _rootProvider.TryGetExports(definition, atomicComposition, out exports);
                     break;
                 case ImportSource.Local:
-                    Assumes.NotNull(_localExportProvider);
+                    if (_localExportProvider == null)
+                    {
+                        throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                    }
                     _localExportProvider.TryGetExports(definition.RemoveImportSource(), atomicComposition, out exports);
                     break;
                 case ImportSource.NonLocal:

@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.DirectoryServices.ActiveDirectory.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public class ActiveDirectoryInterSiteTransportTests
     {
         [Fact]
@@ -60,10 +61,14 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [InlineData(DirectoryContextType.DirectoryServer)]
         [InlineData(DirectoryContextType.Domain)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Access to common path is denied inside App")]
-        public void FindByTransportType_InvalidContextTypeWithName_ThrowsArgumentException(DirectoryContextType type)
+        public void FindByTransportType_InvalidContextTypeWithName(DirectoryContextType type)
         {
             var context = new DirectoryContext(type, "Name");
-            AssertExtensions.Throws<ArgumentException>("context", () => ActiveDirectoryInterSiteTransport.FindByTransportType(context, ActiveDirectoryTransportType.Rpc));
+            Exception exception = Record.Exception(() => ActiveDirectoryInterSiteTransport.FindByTransportType(context, ActiveDirectoryTransportType.Rpc));
+            Assert.NotNull(exception);
+            Assert.True(exception is ArgumentException ||
+                        exception is ActiveDirectoryOperationException,
+                        $"We got unrecognized exception {exception}");
         }
 
         [Fact]

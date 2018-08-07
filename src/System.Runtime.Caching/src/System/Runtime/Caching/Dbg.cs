@@ -413,29 +413,35 @@ namespace System.Runtime.Caching
         }
 
         private static void MonitorRegistryForOneChange() {
-            // Close the open reg handle
-            if (s_regHandle != null) {
-                s_regHandle.Close();
-                s_regHandle = null;
-            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Close the open reg handle
+                if (s_regHandle != null) 
+                {
+                    s_regHandle.Close();
+                    s_regHandle = null;
+                }
 
-            // Open the reg key
-            int result = NativeMethods.RegOpenKeyEx(NativeMethods.HKEY_LOCAL_MACHINE, s_listenKeyName, 0, NativeMethods.KEY_READ, out s_regHandle);
-            if (result != 0) {
-                StopRegistryMonitor();
-                return;
-            }
+                // Open the reg key
+                int result = NativeMethods.RegOpenKeyEx(NativeMethods.HKEY_LOCAL_MACHINE, s_listenKeyName, 0, NativeMethods.KEY_READ, out s_regHandle);
+                if (result != 0) 
+                {
+                    StopRegistryMonitor();
+                    return;
+                }
 
-            // Listen for changes.
-            result = NativeMethods.RegNotifyChangeKeyValue(
-                    s_regHandle, 
-                    true, 
-                    NativeMethods.REG_NOTIFY_CHANGE_NAME | NativeMethods.REG_NOTIFY_CHANGE_LAST_SET,
-                    s_notifyEvent.SafeWaitHandle,
-                    true);
+                // Listen for changes.
+                result = NativeMethods.RegNotifyChangeKeyValue(
+                        s_regHandle, 
+                        true, 
+                        NativeMethods.REG_NOTIFY_CHANGE_NAME | NativeMethods.REG_NOTIFY_CHANGE_LAST_SET,
+                        s_notifyEvent.SafeWaitHandle,
+                        true);
 
-            if (result != 0) {
-                StopRegistryMonitor();
+                if (result != 0) 
+                {
+                    StopRegistryMonitor();
+                }
             }
         }
 
@@ -523,8 +529,11 @@ namespace System.Runtime.Caching
             }
             else {
                 if (s_includeThreadPrefix) {
-                    idThread = NativeMethods.GetCurrentThreadId();
-                    idProcess = NativeMethods.GetCurrentProcessId();
+                    idThread = Thread.CurrentThread.ManagedThreadId;
+                    using(var process = Process.GetCurrentProcess())
+                    {
+                        idProcess = process.Id;
+                    }
                     traceFormat = "[0x{0:x}.{1:x} {2} {3}] {4}\n{5}";
                 }
                 else {
@@ -553,7 +562,6 @@ namespace System.Runtime.Caching
         //    internal int Result;
         //}
 
-        [ResourceExposure(ResourceScope.None)]
         static bool DoAssert(string message) {
             if (!s_assert) {
                 return false;
@@ -610,6 +618,11 @@ Stack trace:
 
 A=Exit process R=Debug I=Continue";
             }
+            int idProcess = 0;
+            using (var process = Process.GetCurrentProcess())
+            {
+                idProcess = process.Id;
+            }
 
             string dialogMessage = string.Format(
                 CultureInfo.InvariantCulture,
@@ -617,35 +630,9 @@ A=Exit process R=Debug I=Continue";
                 message,
                 fileName, lineNumber,
                 COMPONENT,
-                NativeMethods.GetCurrentProcessId(), NativeMethods.GetCurrentThreadId(),
+                idProcess, Thread.CurrentThread.ManagedThreadId,
                 trace.ToString());
 
-            //MBResult mbResult = new MBResult();
-
-            //Thread thread = new Thread(
-            //    delegate() {
-            //        for (int i = 0; i < 100; i++) {
-            //            NativeMethods.MSG msg = new NativeMethods.MSG();
-            //            NativeMethods.PeekMessage(ref msg, new HandleRef(mbResult, IntPtr.Zero), 0, 0, NativeMethods.PM_REMOVE);
-            //        }
-
-            //        mbResult.Result = NativeMethods.MessageBox(new HandleRef(mbResult, IntPtr.Zero), dialogMessage, PRODUCT + " Assertion",                
-            //            NativeMethods.MB_SERVICE_NOTIFICATION | 
-            //            NativeMethods.MB_TOPMOST |
-            //            NativeMethods.MB_ABORTRETRYIGNORE | 
-            //            NativeMethods.MB_ICONEXCLAMATION);
-            //    }
-            //);
-
-            //thread.Start();
-            //thread.Join();
-
-            //if (mbResult.Result == NativeMethods.IDABORT) {
-            //    IntPtr currentProcess = NativeMethods.GetCurrentProcess();
-            //    NativeMethods.TerminateProcess(new HandleRef(mbResult, currentProcess), 1);
-            //}
-
-            //return mbResult.Result == NativeMethods.IDRETRY;
             Debug.Fail(dialogMessage);
             return true;
         }
@@ -725,7 +712,7 @@ A=Exit process R=Debug I=Continue";
 #endif
 
         [Conditional("DEBUG")]
-        public static void TraceException(String tagName, Exception e)
+        public static void TraceException(string tagName, Exception e)
         {
 #if DEBUG
             if (TraceBreak(tagName, null, e, true)) {
@@ -761,7 +748,6 @@ A=Exit process R=Debug I=Continue";
         //      * Else display a dialog box asking the user to Abort, Retry (break), or Ignore
         //
         [Conditional("DEBUG")]
-        [ResourceExposure(ResourceScope.None)]
         internal static void Assert(bool assertion)
         {
 #if DEBUG
@@ -778,7 +764,6 @@ A=Exit process R=Debug I=Continue";
         // Like Assert, but the assertion is always considered to be false.
         //
         [Conditional("DEBUG")]
-        [ResourceExposure(ResourceScope.None)]
         internal static void Fail(string message)
         {
 #if DEBUG
@@ -791,7 +776,6 @@ A=Exit process R=Debug I=Continue";
         // Note that the tag needn't be an exact match.
         //
         [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Grandfathered suppression from original caching code checkin")]
-        [ResourceExposure(ResourceScope.None)]
         internal static bool IsTagEnabled(string tagName)
         {
 #if DEBUG
@@ -807,7 +791,6 @@ A=Exit process R=Debug I=Continue";
         // This function chekcs for an exact match.
         //
         [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Grandfathered suppression from original caching code checkin")]
-        [ResourceExposure(ResourceScope.None)]
         internal static bool IsTagPresent(string tagName)
         {
 #if DEBUG
@@ -822,17 +805,19 @@ A=Exit process R=Debug I=Continue";
         // Breaks into the debugger, or launches one if not yet attached.
         //
         [Conditional("DEBUG")]
-        [ResourceExposure(ResourceScope.None)]
         internal static void Break()
         {
 #if DEBUG
-            if (NativeMethods.IsDebuggerPresent()) {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && NativeMethods.IsDebuggerPresent()) 
+            {
                 NativeMethods.DebugBreak();
             }
-            else if (!Debugger.IsAttached) {
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !Debugger.IsAttached) 
+            {
                 Debugger.Launch();
             }
-            else {
+            else 
+            {
                 Debugger.Break();            
             }
 #endif
@@ -882,8 +867,7 @@ A=Exit process R=Debug I=Continue";
         // Use Debug.Validate(tagName, obj) for that purpose.
         //
         [Conditional("DEBUG")]
-        [ResourceExposure(ResourceScope.None)]
-        internal static void Validate(Object obj)
+        internal static void Validate(object obj)
         {
 #if DEBUG
             Type        type;
@@ -913,8 +897,7 @@ A=Exit process R=Debug I=Continue";
         // An Assertion is made if the validation fails.
         //
         [Conditional("DEBUG")]
-        [ResourceExposure(ResourceScope.None)]
-        internal static void Validate(string tagName, Object obj)
+        internal static void Validate(string tagName, object obj)
         {
 #if DEBUG
             EnsureInit();
@@ -998,7 +981,7 @@ A=Exit process R=Debug I=Continue";
         // @param obj  The object to dump.
         // 
         [Conditional("DEBUG")]
-        internal static void Dump(string tagName, Object obj)
+        internal static void Dump(string tagName, object obj)
         {
 #if DEBUG
             EnsureInit();

@@ -24,7 +24,7 @@ namespace System.IO
                 name = Path.GetPathRoot(driveName);
                 // Disallow null or empty drive letters and UNC paths
                 if (name == null || name.Length == 0 || name.StartsWith("\\\\", StringComparison.Ordinal))
-                    throw new ArgumentException(SR.Arg_MustBeDriveLetterOrRootDir);
+                    throw new ArgumentException(SR.Arg_MustBeDriveLetterOrRootDir, nameof(driveName));
             }
             // We want to normalize to have a trailing backslash so we don't have two equivalent forms and
             // because some Win32 API don't work without it.
@@ -37,7 +37,7 @@ namespace System.IO
             // On Windows this means it's between A and Z, ignoring case.
             char letter = driveName[0];
             if (!((letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z')))
-                throw new ArgumentException(SR.Arg_MustBeDriveLetterOrRootDir);
+                throw new ArgumentException(SR.Arg_MustBeDriveLetterOrRootDir, nameof(driveName));
 
             return name;
         }
@@ -51,7 +51,7 @@ namespace System.IO
             }
         }
 
-        public String DriveFormat
+        public string DriveFormat
         {
             get
             {
@@ -159,7 +159,7 @@ namespace System.IO
         }
 
         // Null is a valid volume label.
-        public String VolumeLabel
+        public string VolumeLabel
         {
             get
             {

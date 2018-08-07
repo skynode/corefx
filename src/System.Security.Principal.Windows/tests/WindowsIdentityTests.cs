@@ -4,8 +4,13 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
-using System.Runtime.Serialization.Formatters.Tests;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Security.Claims;
 using System.Security.Principal;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tests;
 using Xunit;
 
 public class WindowsIdentityTests
@@ -91,6 +96,100 @@ public class WindowsIdentityTests
     {
         WindowsIdentity id = WindowsIdentity.GetCurrent();
         Assert.Equal(id.AccessToken.DangerousGetHandle(), id.Token);
+    }
+
+    [Fact]
+    public static void CheckDeviceClaims()
+    {
+        using (WindowsIdentity id = WindowsIdentity.GetCurrent())
+        {
+            int manualCount = id.Claims.Count(c => c.Properties.ContainsKey(ClaimTypes.WindowsDeviceClaim));
+            int autoCount = id.DeviceClaims.Count();
+
+            Assert.Equal(manualCount, autoCount);
+        }
+    }
+
+    [Fact]
+    public static void CheckUserClaims()
+    {
+        using (WindowsIdentity id = WindowsIdentity.GetCurrent())
+        {
+            Claim[] allClaims = id.Claims.ToArray();
+            int deviceCount = allClaims.Count(c => c.Properties.ContainsKey(ClaimTypes.WindowsDeviceClaim));
+            int manualCount = allClaims.Length - deviceCount;
+            int autoCount = id.UserClaims.Count();
+
+            Assert.Equal(manualCount, autoCount);
+        }
+    }
+
+    [Fact]
+    public static void RunImpersonatedTest_InvalidHandle()
+    {
+        using (var mutex = new Mutex())
+        {
+            SafeAccessTokenHandle handle = null;
+            try
+            {
+                handle = new SafeAccessTokenHandle(mutex.SafeWaitHandle.DangerousGetHandle());
+                Assert.Throws<ArgumentException>(() => WindowsIdentity.RunImpersonated(handle, () => { }));
+            }
+            finally
+            {
+                handle?.SetHandleAsInvalid();
+            }
+        }
+    }
+
+    [Fact]
+    public static void RunImpersonatedAsyncTest()
+    {
+        var testData = new RunImpersonatedAsyncTestInfo();
+        BeginTask(testData);
+
+        // Wait for the SafeHandle that was disposed in BeginTask() to actually be closed
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.WaitForPendingFinalizers();
+
+        testData.continueTask.Release();
+        testData.task.CheckedWait();
+        if (testData.exception != null)
+        {
+            throw new AggregateException(testData.exception);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void BeginTask(RunImpersonatedAsyncTestInfo testInfo)
+    {
+        testInfo.continueTask = new SemaphoreSlim(0, 1);
+        using (SafeAccessTokenHandle token = WindowsIdentity.GetCurrent().AccessToken)
+        {
+            WindowsIdentity.RunImpersonated(token, () =>
+            {
+                testInfo.task = Task.Run(async () =>
+                {
+                    try
+                    {
+                        Task<bool> task = testInfo.continueTask.WaitAsync(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
+                        Assert.True(await task.ConfigureAwait(false));
+                    }
+                    catch (Exception ex)
+                    {
+                        testInfo.exception = ex;
+                    }
+                });
+            });
+        }
+    }
+
+    private class RunImpersonatedAsyncTestInfo
+    {
+        public Task task;
+        public SemaphoreSlim continueTask;
+        public Exception exception;
     }
 
     private static void CheckDispose(WindowsIdentity identity, bool anonymous = false)

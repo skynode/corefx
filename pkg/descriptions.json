@@ -1,5 +1,10 @@
 [
   {
+    "Name": "CoreFx.Private.TestUtilities",
+    "Description": "Private package, which provides testing utility classes. The package is meant to be used when running CoreFX tests on a runtime.",
+    "CommonTypes": []
+  },
+  {
     "Name": "RuntimePackage",
     "Description": "Internal implementation package not meant for direct consumption.  Please do not reference directly.",
     "CommonTypes": []
@@ -29,7 +34,7 @@
     "Name": "Microsoft.Diagnostics.Tracing.EventSource.Redist",
     "Description": "This package includes the class Microsoft.Diagnostics.Tracing.EventSource which enables firing ETW events from managed code. This is the \"runtime\" or \"redist\" EventSource package and should be referenced directly only by other NuGet packages that need the EventSource functionality. Application developers that need this functionality should instead reference the Microsoft.Diagnostics.Tracing.EventSource NuGet package which provides an enhanced developer experience.
 
-      This package enables defining a strongly typed specification of an ETW provider that can be called by managed code. The EventSource class is also included in the .NET Framework. This package provides a newer version that has more features. It is meant to be used as a stop gap until those features it contains are ported to System.Diagnostics.Tracing.EventSource.
+      This package enables defining a strongly typed specification of an ETW provider that can be called by managed code. The EventSource class is also included in the .NET Framework, .NET Core, and netstandard2.0 in the System.Diagnostics.Tracing namespace. This package contains the latest version of EventSource and is meant to be used as a stop gap for .NET Framework developers until features and fixes are ported to System.Diagnostics.Tracing.EventSource in the .NET Framework.
 
       For more details, have a look at http://msdn.microsoft.com/en-us/library/system.diagnostics.tracing.eventsource.aspx.
 
@@ -201,6 +206,13 @@
     ]
   },
   {
+    "Name": "Microsoft.Win32.SystemEvents",
+    "Description": "Provides access to Windows system event notifications.",
+    "CommonTypes": [
+      "Microsoft.Win32.SystemEvents"
+    ]
+  },
+  {
     "Name": "Microsoft.Win32.Registry.AccessControl",
     "Description": "Provides support for managing access and audit control lists for Microsoft.Win32.RegistryKey.",
     "CommonTypes": [
@@ -358,6 +370,18 @@
       "System.ComponentModel.Composition.Primitives.ExportDefinition",
       "System.ComponentModel.Composition.Primitives.ImportDefinition",
       "System.ComponentModel.Composition.ReflectionModel.ReflectionModelServices"
+    ]
+  },
+  {
+    "Name": "System.ComponentModel.Composition.Registration",
+    "Description": "This namespace provides classes that constitute the core of the Managed Extensibility Framework, or MEF.",
+    "CommonTypes": [
+      "System.ComponentModel.Composition.Registration.RegistrationBuilder",
+      "System.ComponentModel.Composition.Registration.PartBuilder",
+      "System.ComponentModel.Composition.Registration.PartBuilder<T>",
+      "System.ComponentModel.Composition.Registration.ParameterImportBuilder",
+      "System.ComponentModel.Composition.Registration.ImportBuilder",
+      "System.ComponentModel.Composition.Registration.ExportBuilder"
     ]
   },
   {
@@ -710,6 +734,19 @@
     ]
   },
   {
+    "Name": "System.Drawing.Design.Primitives",
+    "Description": "Contains classes that extend design-time user interface (UI) logic and drawing.",
+    "CommonTypes": [
+      "System.Drawing.Design.IPropertyValueUIService",
+      "System.Drawing.Design.PropertyValueUIHandler",
+      "System.Drawing.Design.PropertyValueUIItem",
+      "System.Drawing.Design.PropertyValueUIItemInvokeHandler",
+      "System.Drawing.Design.PaintValueEventArgs",
+      "System.Drawing.Design.UITypeEditor"
+      "System.Drawing.Design.UITypeEditorEditStyle"
+    ]
+  },
+  {
     "Name": "System.Dynamic.Runtime",
     "Description": "Provides classes and interfaces that support the Dynamic Language Runtime (DLR).",
     "CommonTypes": [
@@ -893,6 +930,15 @@
     "CommonTypes": []
   },
   {
+    "Name": "System.IO.Pipelines",
+    "Description": "Single producer single consumer byte buffer management.",
+    "CommonTypes": [
+      "System.IO.Pipelines.Pipe",
+      "System.IO.Pipelines.PipeWriter",
+      "System.IO.Pipelines.PipeReader"
+    ]
+  },
+  {
     "Name": "System.IO.Pipes",
     "Description": "Provides a means for interprocess communication through anonymous and/or named pipes.",
     "CommonTypes": [
@@ -991,9 +1037,16 @@
   },
   {
     "Name": "System.Memory",
-    "Description": "Provides types for efficient low-allocation access to memory.",
+    "Description": "Provides types for efficient representation and pooling of managed, stack, and native memory segments and sequences of such segments, along with primitives to parse and format UTF-8 encoded text stored in those memory segments.",
     "CommonTypes": [
-      "System.Span"
+        "System.Span",
+        "System.ReadOnlySpan",
+        "System.Memory",
+        "System.ReadOnlyMemory",
+        "System.Buffers.MemoryPool",
+        "System.Buffers.ReadOnlySequence",
+        "System.Buffers.Text.Utf8Parser",
+        "System.Buffers.Text.Utf8Formatter"
     ]
   },
   {
@@ -1037,6 +1090,13 @@
       "System.Net.WebExceptionStatus",
       "System.Net.WebRequest",
       "System.Net.WebResponse"
+    ]
+  },
+  {
+    "Name": "System.Net.WebSockets.WebSocketProtocol",
+    "Description": "Provides the WebSocketProtocol class, which allows creating a websocket from a connected stream using WebSocketsProtocol.CreateFromConnectedStream.",
+    "CommonTypes": [
+      "System.Net.WebSockets.WebSocketProtocol"
     ]
   },
   {
@@ -1411,7 +1471,7 @@
       "System.Runtime.Caching.FileChangeMonitor",
       "System.Runtime.Caching.HostFileChangeMonitor",
       "System.Runtime.Caching.MemoryCache",
-      "System.Runtime.Caching.ObjectCache",
+      "System.Runtime.Caching.ObjectCache"
     ]
   },
   {
@@ -2062,6 +2122,14 @@
     "Description": "Provides the System.Web.HttpUtility class for encoding and decoding various web formats.",
     "CommonTypes": [
       "System.Web.HttpUtility"
+    ]
+  },
+  {
+    "Name": "System.Windows.Extensions",
+    "Description": "Provides miscellaneous Windows-specific types",
+    "CommonTypes":[
+      "System.Security.Cryptography.X509Certificates.X509Certificate2UI",
+      "System.Security.Cryptography.X509Certificates.X509SelectionFlag"
     ]
   },
   {

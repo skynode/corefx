@@ -160,6 +160,13 @@ namespace System.ComponentModel.Tests
             Assert.NotEqual(firstAssociatedObject, firstAssociation);
         }
 
+        [Fact]
+        public void DerivedPropertyAttribute() {
+            PropertyDescriptor property = TypeDescriptor.GetProperties(typeof(FooBarDerived))["Value"];
+            var descriptionAttribute = (DescriptionAttribute)property.Attributes[typeof(DescriptionAttribute)];
+            Assert.Equal("Derived", descriptionAttribute.Description);
+        }
+
         private class InvocationRecordingTypeDescriptionProvider : TypeDescriptionProvider
         {
             public bool ReceivedCall { get; private set; } = false;
@@ -221,11 +228,23 @@ namespace System.ComponentModel.Tests
             }
         }
 
+        class FooBarBase
+        {
+            [Description("Base")]
+            public virtual int Value { get; set; }
+        }
+
+        class FooBarDerived : FooBarBase 
+        {
+            [Description("Derived")]
+            public override int Value { get; set; }
+        }
+
         private static Tuple<Type, Type>[] s_typesWithConverters =
         {
             new Tuple<Type, Type> (typeof(bool), typeof(BooleanConverter)),
             new Tuple<Type, Type> (typeof(byte), typeof(ByteConverter)),
-            new Tuple<Type, Type> (typeof(SByte), typeof(SByteConverter)),
+            new Tuple<Type, Type> (typeof(sbyte), typeof(SByteConverter)),
             new Tuple<Type, Type> (typeof(char), typeof(CharConverter)),
             new Tuple<Type, Type> (typeof(double), typeof(DoubleConverter)),
             new Tuple<Type, Type> (typeof(string), typeof(StringConverter)),
@@ -233,14 +252,14 @@ namespace System.ComponentModel.Tests
             new Tuple<Type, Type> (typeof(int), typeof(Int32Converter)),
             new Tuple<Type, Type> (typeof(long), typeof(Int64Converter)),
             new Tuple<Type, Type> (typeof(float), typeof(SingleConverter)),
-            new Tuple<Type, Type> (typeof(UInt16), typeof(UInt16Converter)),
-            new Tuple<Type, Type> (typeof(UInt32), typeof(UInt32Converter)),
-            new Tuple<Type, Type> (typeof(UInt64), typeof(UInt64Converter)),
+            new Tuple<Type, Type> (typeof(ushort), typeof(UInt16Converter)),
+            new Tuple<Type, Type> (typeof(uint), typeof(UInt32Converter)),
+            new Tuple<Type, Type> (typeof(ulong), typeof(UInt64Converter)),
             new Tuple<Type, Type> (typeof(object), typeof(TypeConverter)),
             new Tuple<Type, Type> (typeof(void), typeof(TypeConverter)),
             new Tuple<Type, Type> (typeof(DateTime), typeof(DateTimeConverter)),
             new Tuple<Type, Type> (typeof(DateTimeOffset), typeof(DateTimeOffsetConverter)),
-            new Tuple<Type, Type> (typeof(Decimal), typeof(DecimalConverter)),
+            new Tuple<Type, Type> (typeof(decimal), typeof(DecimalConverter)),
             new Tuple<Type, Type> (typeof(TimeSpan), typeof(TimeSpanConverter)),
             new Tuple<Type, Type> (typeof(Guid), typeof(GuidConverter)),
             new Tuple<Type, Type> (typeof(Array), typeof(ArrayConverter)),

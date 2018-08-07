@@ -21,6 +21,7 @@ namespace System.Net
                 // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
                 // we don't support/parse a port specification at the end of an IPv4 address.
                 ushort* numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressShorts];
+                new Span<ushort>(numbers, IPAddressParserStatics.IPv6AddressShorts).Clear();
                 if (Ipv6StringToAddress(ipSpan, numbers, IPAddressParserStatics.IPv6AddressShorts, out uint scope))
                 {
                     return new IPAddress(numbers, IPAddressParserStatics.IPv6AddressShorts, scope);
@@ -44,6 +45,13 @@ namespace System.Net
             char* addressString = stackalloc char[MaxIPv4StringLength];
             int charsWritten = IPv4AddressToStringHelper(address, addressString);
             return new string(addressString, 0, charsWritten);
+        }
+
+        internal static unsafe void IPv4AddressToString(uint address, StringBuilder destination)
+        {
+            char* addressString = stackalloc char[MaxIPv4StringLength];
+            int charsWritten = IPv4AddressToStringHelper(address, addressString);
+            destination.Append(addressString, charsWritten);
         }
 
         internal static unsafe bool IPv4AddressToString(uint address, Span<char> formatted, out int charsWritten)
@@ -123,7 +131,7 @@ namespace System.Net
                 {
                     buffer.Append(':');
                 }
-                buffer.Append(IPAddressParser.IPv4AddressToString(ExtractIPv4Address(address)));
+                IPv4AddressToString(ExtractIPv4Address(address), buffer);
             }
             else
             {

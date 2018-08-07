@@ -492,7 +492,7 @@ namespace System.Data.Common
         {
             return Argument(SR.GetString(SR.ADP_InvalidSizeValue, value.ToString(CultureInfo.InvariantCulture)));
         }
-        internal static ArgumentException ParameterValueOutOfRange(Decimal value)
+        internal static ArgumentException ParameterValueOutOfRange(decimal value)
         {
             return ADP.Argument(SR.GetString(SR.ADP_ParameterValueOutOfRange, value.ToString((IFormatProvider)null)));
         }
@@ -879,6 +879,48 @@ namespace System.Data.Common
             ArgumentOutOfRangeException e = new ArgumentOutOfRangeException(parameterName, value, message);
             TraceExceptionAsReturnValue(e);
             return e;
+        }
+
+        internal static ArgumentException InvalidArgumentLength(string argumentName, int limit)
+        {
+            return Argument(SR.GetString(SR.ADP_InvalidArgumentLength, argumentName, limit));
+        }
+
+        internal static ArgumentException MustBeReadOnly(string argumentName)
+        {
+            return Argument(SR.GetString(SR.ADP_MustBeReadOnly, argumentName));
+        }
+
+        internal static InvalidOperationException InvalidMixedUsageOfSecureAndClearCredential()
+        {
+            return InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfSecureAndClearCredential));
+        }
+
+        internal static ArgumentException InvalidMixedArgumentOfSecureAndClearCredential()
+        {
+            return Argument(SR.GetString(SR.ADP_InvalidMixedUsageOfSecureAndClearCredential));
+        }
+
+        internal static InvalidOperationException InvalidMixedUsageOfSecureCredentialAndIntegratedSecurity()
+        {
+            return InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfSecureCredentialAndIntegratedSecurity));
+        }
+
+        internal static ArgumentException InvalidMixedArgumentOfSecureCredentialAndIntegratedSecurity()
+        {
+            return Argument(SR.GetString(SR.ADP_InvalidMixedUsageOfSecureCredentialAndIntegratedSecurity));
+        }
+        internal static InvalidOperationException InvalidMixedUsageOfAccessTokenAndIntegratedSecurity()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfAccessTokenAndIntegratedSecurity));
+        }
+        static internal InvalidOperationException InvalidMixedUsageOfAccessTokenAndUserIDPassword()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfAccessTokenAndUserIDPassword));
+        }
+        static internal Exception InvalidMixedUsageOfCredentialAndAccessToken()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfCredentialAndAccessToken));
         }
     }
 }

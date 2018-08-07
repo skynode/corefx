@@ -167,19 +167,29 @@ namespace System.Xml.Serialization
                 name.Name = serializerName;
                 name.CodeBase = null;
                 name.CultureInfo = CultureInfo.InvariantCulture;
-                string serializerPath = Path.Combine(Path.GetDirectoryName(type.Assembly.Location), serializerName + ".dll");
-                if (!File.Exists(serializerPath))
-                {
-                    serializerPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), serializerName + ".dll");
-                }
+
+                string serializerPath = null;
 
                 try
                 {
-                    serializer = Assembly.LoadFile(serializerPath);
+                    if (!string.IsNullOrEmpty(type.Assembly.Location))
+                    {
+                        serializerPath = Path.Combine(Path.GetDirectoryName(type.Assembly.Location), serializerName + ".dll");
+                    }
+
+                    if ((string.IsNullOrEmpty(serializerPath) || !File.Exists(serializerPath)) && !string.IsNullOrEmpty(Assembly.GetEntryAssembly().Location))
+                    {
+                        serializerPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), serializerName + ".dll");
+                    }
+
+                    if (!string.IsNullOrEmpty(serializerPath))
+                    {
+                        serializer = Assembly.LoadFile(serializerPath);
+                    }
                 }
                 catch (Exception e)
                 {
-                    if (e is OutOfMemoryException)
+                    if (e is ThreadAbortException || e is StackOverflowException || e is OutOfMemoryException)
                     {
                         throw;
                     }
@@ -190,6 +200,7 @@ namespace System.Xml.Serialization
                         return null;
                     }
                 }
+
                 if (serializer == null)
                 {
                     if (XmlSerializer.Mode == SerializationMode.PreGenOnly)
@@ -199,6 +210,14 @@ namespace System.Xml.Serialization
 
                     return null;
                 }
+
+#if !FEATURE_SERIALIZATION_UAPAOT
+                if (!IsSerializerVersionMatch(serializer, type, defaultNamespace))
+                {
+                    XmlSerializationEventSource.Log.XmlSerializerExpired(serializerName, type.FullName);
+                    return null;
+                }
+#endif
             }
             else
             {
@@ -238,6 +257,20 @@ namespace System.Xml.Serialization
         }
 
 #if !FEATURE_SERIALIZATION_UAPAOT
+        private static bool IsSerializerVersionMatch(Assembly serializer, Type type, string defaultNamespace)
+        {
+            if (serializer == null)
+                return false;
+            object[] attrs = serializer.GetCustomAttributes(typeof(XmlSerializerVersionAttribute), false);
+            if (attrs.Length != 1)
+                return false;
+
+            XmlSerializerVersionAttribute assemblyInfo = (XmlSerializerVersionAttribute)attrs[0];
+            if (assemblyInfo.ParentAssemblyId == GenerateAssemblyId(type) && assemblyInfo.Namespace == defaultNamespace)
+                return true;
+            return false;
+        }
+
         private static string GenerateAssemblyId(Type type)
         {
             Module[] modules = type.Assembly.GetModules();
@@ -395,7 +428,7 @@ namespace System.Xml.Serialization
                 writer.WriteLine("}");
 
                 string codecontent = compiler.Source.ToString();
-                Byte[] info = new UTF8Encoding(true).GetBytes(codecontent);
+                byte[] info = new UTF8Encoding(true).GetBytes(codecontent);
                 stream.Write(info, 0, info.Length);
                 stream.Flush();
                 return true;
@@ -421,10 +454,10 @@ namespace System.Xml.Serialization
             if (types != null && types.Length > 0 && types[0] != null)
             {
                 ConstructorInfo AssemblyVersionAttribute_ctor = typeof(AssemblyVersionAttribute).GetConstructor(
-                    new Type[] { typeof(String) }
+                    new Type[] { typeof(string) }
                     );
                 string assemblyVersion = types[0].Assembly.GetName().Version.ToString();
-                assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(AssemblyVersionAttribute_ctor, new Object[] { assemblyVersion }));
+                assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(AssemblyVersionAttribute_ctor, new object[] { assemblyVersion }));
             }
             CodeIdentifiers classes = new CodeIdentifiers();
             classes.AddUnique("XmlSerializationWriter", "XmlSerializationWriter");
@@ -664,8 +697,9 @@ namespace System.Xml.Serialization
                 TempAssembly tempAssembly;
                 if (_cache.TryGetValue(key, out tempAssembly) && tempAssembly == assembly)
                     return;
-                _cache = new Dictionary<TempAssemblyCacheKey, TempAssembly>(_cache); // clone
-                _cache[key] = assembly;
+                Dictionary<TempAssemblyCacheKey, TempAssembly> _copy = new Dictionary<TempAssemblyCacheKey, TempAssembly>(_cache); // clone
+                _copy[key] = assembly;
+                _cache = _copy;
             }
         }
     }

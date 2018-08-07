@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
+
 namespace System.Buffers.Text.Tests
 {
     //
-    // Used to model DateTime and DateTimeOffsets that have "illegal" values (e.g. Jan 32) This is used to generate a subset of DateTime 
+    // Used to model DateTime and DateTimeOffsets that have "illegal" values (e.g. Jan 32) This is used to generate a subset of DateTime
     // and DateTimeOffset ParserTestData objects.
     //
     public sealed class PseudoDateTime
@@ -38,9 +40,9 @@ namespace System.Buffers.Text.Tests
                 if (Fraction != 0)
                     return null;
 
-                return Month.ToString("D2") + "/" + Day.ToString("D2") + "/" + Year.ToString("D4") +
-                    " " + Hour.ToString("D2") + ":" + Minute.ToString("D2") + ":" + Second.ToString("D2") +
-                    " " + (OffsetNegative ? "-" : "+") + OffsetHours.ToString("D2") + ":" + OffsetMinutes.ToString("D2");
+                return Month.ToString("D2", CultureInfo.InvariantCulture) + "/" + Day.ToString("D2", CultureInfo.InvariantCulture) + "/" + Year.ToString("D4", CultureInfo.InvariantCulture) +
+                    " " + Hour.ToString("D2", CultureInfo.InvariantCulture) + ":" + Minute.ToString("D2", CultureInfo.InvariantCulture) + ":" + Second.ToString("D2", CultureInfo.InvariantCulture) +
+                    " " + (OffsetNegative ? "-" : "+") + OffsetHours.ToString("D2", CultureInfo.InvariantCulture) + ":" + OffsetMinutes.ToString("D2", CultureInfo.InvariantCulture);
             }
         }
 
@@ -53,8 +55,8 @@ namespace System.Buffers.Text.Tests
                 if (OffsetHours != 0 || OffsetMinutes != 0)
                     return null;
 
-                return Month.ToString("D2") + "/" + Day.ToString("D2") + "/" + Year.ToString("D4") +
-                    " " + Hour.ToString("D2") + ":" + Minute.ToString("D2") + ":" + Second.ToString("D2");
+                return Month.ToString("D2", CultureInfo.InvariantCulture) + "/" + Day.ToString("D2", CultureInfo.InvariantCulture) + "/" + Year.ToString("D4", CultureInfo.InvariantCulture) +
+                    " " + Hour.ToString("D2", CultureInfo.InvariantCulture) + ":" + Minute.ToString("D2", CultureInfo.InvariantCulture) + ":" + Second.ToString("D2", CultureInfo.InvariantCulture);
             }
         }
 
@@ -83,19 +85,19 @@ namespace System.Buffers.Text.Tests
                     dayAbbreviation = "Sun";
                 }
 
-                string monthAbbrevation;
+                string monthAbbreviation;
                 if (Month >= 1 && Month <= 12)
                 {
-                    monthAbbrevation = s_monthAbbreviations[Month - 1];
+                    monthAbbreviation = s_monthAbbreviations[Month - 1];
                 }
                 else
                 {
                     // Pick something legal here as we're expecting code coverage of an error case and we don't want a bad day abbreviation to bypass that.
-                    monthAbbrevation = "Jan";
+                    monthAbbreviation = "Jan";
                 }
 
-                return dayAbbreviation + ", " + Day.ToString("D2") + " " + monthAbbrevation + " " + Year.ToString("D4") + " "
-                    + Hour.ToString("D2") + ":" + Minute.ToString("D2") + ":" + Second.ToString("D2") + " "
+                return dayAbbreviation + ", " + Day.ToString("D2", CultureInfo.InvariantCulture) + " " + monthAbbreviation + " " + Year.ToString("D4", CultureInfo.InvariantCulture) + " "
+                    + Hour.ToString("D2", CultureInfo.InvariantCulture) + ":" + Minute.ToString("D2", CultureInfo.InvariantCulture) + ":" + Second.ToString("D2", CultureInfo.InvariantCulture) + " "
                     + "GMT";
             }
         }
@@ -109,8 +111,8 @@ namespace System.Buffers.Text.Tests
                 if (OffsetHours != 0 || OffsetMinutes != 0)
                     return null;
 
-                return Year.ToString("D4") + "-" + Month.ToString("D2") + "-" + Day.ToString("D2") + "T"
-                    + Hour.ToString("D2") + ":" + Minute.ToString("D2") + ":" + Second.ToString("D2")
+                return Year.ToString("D4", CultureInfo.InvariantCulture) + "-" + Month.ToString("D2", CultureInfo.InvariantCulture) + "-" + Day.ToString("D2", CultureInfo.InvariantCulture) + "T"
+                    + Hour.ToString("D2", CultureInfo.InvariantCulture) + ":" + Minute.ToString("D2", CultureInfo.InvariantCulture) + ":" + Second.ToString("D2", CultureInfo.InvariantCulture)
                     + "." + Fraction.ToString("D7");
             }
         }
@@ -120,10 +122,10 @@ namespace System.Buffers.Text.Tests
         {
             get
             {
-                return Year.ToString("D4") + "-" + Month.ToString("D2") + "-" + Day.ToString("D2") + "T"
-                    + Hour.ToString("D2") + ":" + Minute.ToString("D2") + ":" + Second.ToString("D2")
-                    + "." + Fraction.ToString("D7")
-                    + (OffsetNegative ? "-" : "+") + OffsetHours.ToString("D2") + ":" + OffsetMinutes.ToString("D2");
+                return Year.ToString("D4", CultureInfo.InvariantCulture) + "-" + Month.ToString("D2", CultureInfo.InvariantCulture) + "-" + Day.ToString("D2", CultureInfo.InvariantCulture) + "T"
+                    + Hour.ToString("D2", CultureInfo.InvariantCulture) + ":" + Minute.ToString("D2", CultureInfo.InvariantCulture) + ":" + Second.ToString("D2", CultureInfo.InvariantCulture)
+                    + "." + Fraction.ToString("D7", CultureInfo.InvariantCulture)
+                    + (OffsetNegative ? "-" : "+") + OffsetHours.ToString("D2", CultureInfo.InvariantCulture) + ":" + OffsetMinutes.ToString("D2", CultureInfo.InvariantCulture);
             }
         }
 

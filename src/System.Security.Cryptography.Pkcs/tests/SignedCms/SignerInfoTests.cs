@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Pkcs.Tests
 {
-    public static class SignerInfoTests
+    public static partial class SignerInfoTests
     {
         [Fact]
         public static void SignerInfo_SignedAttributes_Cached_WhenEmpty()
@@ -343,6 +343,23 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 () => signerInfo.RemoveCounterSignature(signerInfo));
         }
 
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug")]
+        [InlineData(0)]
+        [InlineData(1)]
+        public static void RemoveCounterSignature_EncodedInSingleAttribute(int indexToRemove)
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.RsaPkcs1TwoCounterSignaturesInSingleAttribute);
+            SignerInfo signerInfo = cms.SignerInfos[0];
+
+            Assert.Equal(2, signerInfo.CounterSignerInfos.Count);
+            signerInfo.RemoveCounterSignature(indexToRemove);
+            Assert.Equal(1, signerInfo.CounterSignerInfos.Count);
+
+            cms.CheckSignature(true);
+        }
+
         [Fact]
         public static void RemoveCounterSignature_Null()
         {
@@ -541,6 +558,44 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             counterSigner.CheckSignature(true);
             firstSigner2.CheckSignature(true);
+            cms.CheckSignature(true);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not supported by crypt32")]
+        public static void AddCounterSignerToUnsortedAttributeSignature()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.DigiCertTimeStampToken);
+
+            // Assert.NoThrows
+            cms.CheckSignature(true);
+
+            SignerInfoCollection signers = cms.SignerInfos;
+            Assert.Equal(1, signers.Count);
+            SignerInfo signerInfo = signers[0];
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            {
+                signerInfo.ComputeCounterSignature(
+                    new CmsSigner(
+                        SubjectIdentifierType.IssuerAndSerialNumber,
+                        cert));
+
+                signerInfo.ComputeCounterSignature(
+                    new CmsSigner(
+                        SubjectIdentifierType.SubjectKeyIdentifier,
+                        cert));
+            }
+
+            // Assert.NoThrows
+            cms.CheckSignature(true);
+
+            byte[] exported = cms.Encode();
+            cms = new SignedCms();
+            cms.Decode(exported);
+
+            // Assert.NoThrows
             cms.CheckSignature(true);
         }
 

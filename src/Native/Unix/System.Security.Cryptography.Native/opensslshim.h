@@ -65,7 +65,7 @@ void SSL_CTX_set_alpn_select_cb(SSL_CTX* ctx, int (*cb) (SSL *ssl,
 void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsigned int* len);
 #endif
 
-#define API_EXISTS(fn) (fn != nullptr)
+#define API_EXISTS(fn) (fn != NULL)
 
 // List of all functions from the libssl that are used in the System.Security.Cryptography.Native.
 // Forgetting to add a function here results in build failure with message reporting the function
@@ -192,6 +192,11 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(EVP_MD_CTX_create, true) \
     PER_FUNCTION_BLOCK(EVP_MD_CTX_destroy, true) \
     PER_FUNCTION_BLOCK(EVP_MD_size, true) \
+    PER_FUNCTION_BLOCK(EVP_PKEY_CTX_free, true) \
+    PER_FUNCTION_BLOCK(EVP_PKEY_CTX_new, true) \
+    PER_FUNCTION_BLOCK(EVP_PKEY_derive_set_peer, true) \
+    PER_FUNCTION_BLOCK(EVP_PKEY_derive_init, true) \
+    PER_FUNCTION_BLOCK(EVP_PKEY_derive, true) \
     PER_FUNCTION_BLOCK(EVP_PKEY_free, true) \
     PER_FUNCTION_BLOCK(EVP_PKEY_get1_DSA, true) \
     PER_FUNCTION_BLOCK(EVP_PKEY_get1_EC_KEY, true) \
@@ -229,6 +234,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(OBJ_txt2nid, true) \
     PER_FUNCTION_BLOCK(OBJ_txt2obj, true) \
     PER_FUNCTION_BLOCK(OPENSSL_add_all_algorithms_conf, true) \
+    PER_FUNCTION_BLOCK(OPENSSL_cleanse, true) \
     PER_FUNCTION_BLOCK(PEM_read_bio_PKCS7, true) \
     PER_FUNCTION_BLOCK(PEM_read_bio_X509_AUX, true) \
     PER_FUNCTION_BLOCK(PEM_read_bio_X509_CRL, true) \
@@ -236,11 +242,8 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(PKCS12_create, true) \
     PER_FUNCTION_BLOCK(PKCS12_free, true) \
     PER_FUNCTION_BLOCK(PKCS12_parse, true) \
-    PER_FUNCTION_BLOCK(PKCS7_add_certificate, true) \
-    PER_FUNCTION_BLOCK(PKCS7_content_new, true) \
+    PER_FUNCTION_BLOCK(PKCS7_sign, true) \
     PER_FUNCTION_BLOCK(PKCS7_free, true) \
-    PER_FUNCTION_BLOCK(PKCS7_new, true) \
-    PER_FUNCTION_BLOCK(PKCS7_set_type, true) \
     PER_FUNCTION_BLOCK(RAND_bytes, true) \
     PER_FUNCTION_BLOCK(RAND_poll, true) \
     PER_FUNCTION_BLOCK(RSA_free, true) \
@@ -248,6 +251,8 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(RSA_get_method, true) \
     PER_FUNCTION_BLOCK(RSA_new, true) \
     PER_FUNCTION_BLOCK(RSA_private_decrypt, true) \
+    PER_FUNCTION_BLOCK(RSA_private_encrypt, true) \
+    PER_FUNCTION_BLOCK(RSA_public_decrypt, true) \
     PER_FUNCTION_BLOCK(RSA_public_encrypt, true) \
     PER_FUNCTION_BLOCK(RSA_sign, true) \
     PER_FUNCTION_BLOCK(RSA_size, true) \
@@ -297,7 +302,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(SSL_set_connect_state, true) \
     PER_FUNCTION_BLOCK(SSL_shutdown, true) \
     PER_FUNCTION_BLOCK(SSL_state, true) \
-    PER_FUNCTION_BLOCK(SSLeay_version, true) \
+    PER_FUNCTION_BLOCK(SSLeay, true) \
     PER_FUNCTION_BLOCK(SSLv23_method, true) \
     PER_FUNCTION_BLOCK(SSL_write, true) \
     PER_FUNCTION_BLOCK(TLSv1_1_method, true) \
@@ -357,7 +362,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(EC_POINT_set_affine_coordinates_GF2m, false) \
     
 // Declare pointers to all the used OpenSSL functions
-#define PER_FUNCTION_BLOCK(fn, isRequired) extern decltype(fn)* fn##_ptr;
+#define PER_FUNCTION_BLOCK(fn, isRequired) extern __typeof(fn)* fn##_ptr;
 FOR_ALL_OPENSSL_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
@@ -484,6 +489,11 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_MD_CTX_create EVP_MD_CTX_create_ptr
 #define EVP_MD_CTX_destroy EVP_MD_CTX_destroy_ptr
 #define EVP_MD_size EVP_MD_size_ptr
+#define EVP_PKEY_CTX_free EVP_PKEY_CTX_free_ptr
+#define EVP_PKEY_CTX_new EVP_PKEY_CTX_new_ptr
+#define EVP_PKEY_derive_set_peer EVP_PKEY_derive_set_peer_ptr
+#define EVP_PKEY_derive_init EVP_PKEY_derive_init_ptr
+#define EVP_PKEY_derive EVP_PKEY_derive_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
 #define EVP_PKEY_get1_EC_KEY EVP_PKEY_get1_EC_KEY_ptr
@@ -521,6 +531,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OBJ_txt2nid OBJ_txt2nid_ptr
 #define OBJ_txt2obj OBJ_txt2obj_ptr
 #define OPENSSL_add_all_algorithms_conf OPENSSL_add_all_algorithms_conf_ptr
+#define OPENSSL_cleanse OPENSSL_cleanse_ptr
 #define PEM_read_bio_PKCS7 PEM_read_bio_PKCS7_ptr
 #define PEM_read_bio_X509_AUX PEM_read_bio_X509_AUX_ptr
 #define PEM_read_bio_X509_CRL PEM_read_bio_X509_CRL_ptr
@@ -528,11 +539,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define PKCS12_create PKCS12_create_ptr
 #define PKCS12_free PKCS12_free_ptr
 #define PKCS12_parse PKCS12_parse_ptr
-#define PKCS7_add_certificate PKCS7_add_certificate_ptr
-#define PKCS7_content_new PKCS7_content_new_ptr
+#define PKCS7_sign PKCS7_sign_ptr
 #define PKCS7_free PKCS7_free_ptr
-#define PKCS7_new PKCS7_new_ptr
-#define PKCS7_set_type PKCS7_set_type_ptr
 #define RAND_bytes RAND_bytes_ptr
 #define RAND_poll RAND_poll_ptr
 #define RSA_free RSA_free_ptr
@@ -540,6 +548,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_get_method RSA_get_method_ptr
 #define RSA_new RSA_new_ptr
 #define RSA_private_decrypt RSA_private_decrypt_ptr
+#define RSA_private_encrypt RSA_private_encrypt_ptr
+#define RSA_public_decrypt RSA_public_decrypt_ptr
 #define RSA_public_encrypt RSA_public_encrypt_ptr
 #define RSA_sign RSA_sign_ptr
 #define RSA_size RSA_size_ptr
@@ -589,7 +599,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_set_connect_state SSL_set_connect_state_ptr
 #define SSL_shutdown SSL_shutdown_ptr
 #define SSL_state SSL_state_ptr
-#define SSLeay_version SSLeay_version_ptr
+#define SSLeay SSLeay_ptr
 #define SSLv23_method SSLv23_method_ptr
 #define SSL_write SSL_write_ptr
 #define TLSv1_1_method TLSv1_1_method_ptr

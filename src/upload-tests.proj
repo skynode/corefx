@@ -1,5 +1,5 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
   <!-- CoreFX-Specific Helix test submission project.
        TODOS:
          - Add support for storing test-project-specific timeouts, use this instead of default if available
@@ -61,6 +61,8 @@
 
     <HelixJobType Condition="'$(HelixJobType)'==''">test/functional/cli/</HelixJobType>
 
+    <!-- Detect whether we are on a product construction build via ProductBuildId. If so, set source appropriately -->
+    <HelixSource Condition="'$(HelixSource)'=='' And '$(IsOfficial)'!='' And '$(TestProduct)'!='' And '$(Branch)'!='' And '$(ProductBuildId)'!=''">prodcon/$(TestProduct)/$(Branch)/</HelixSource>
     <HelixSource Condition="'$(HelixSource)'=='' And '$(IsOfficial)'!='' And '$(TestProduct)'!='' And '$(Branch)'!=''">official/$(TestProduct)/$(Branch)/</HelixSource>
     <HelixSource Condition="'$(HelixSource)'=='' And '$(IsOfficial)'=='' And '$(TestProduct)'!='' And '$(Branch)'!=''">pr/$(TestProduct)/$(Branch)/</HelixSource>
     <HelixSource Condition="'$(HelixSource)'==''">pr/unknown/</HelixSource>
@@ -70,9 +72,11 @@
 
     <!-- Properties used for submission by CloudTest.Helix.Targets-->
     <BuildMoniker>$(CurrentDate)</BuildMoniker>
-    <BuildMoniker Condition="'$(IsOfficial)'=='true'">$(OfficialBuildId)</BuildMoniker>
+    <BuildMoniker Condition="'$(IsOfficial)'=='true' And '$(ProductBuildId)'==''">$(OfficialBuildId)</BuildMoniker>
+    <BuildMoniker Condition="'$(IsOfficial)'=='true' And '$(ProductBuildId)'!=''">$(ProductBuildId)</BuildMoniker>
     <HelixArchLabel>$(ArchGroup)</HelixArchLabel>
     <HelixConfigLabel>$(ConfigurationGroup)</HelixConfigLabel>
+    <MaxRetryCount>1</MaxRetryCount>
   </PropertyGroup>
 
   <Target Name="CoreFXPreCloudBuild" >

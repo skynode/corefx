@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -26,10 +27,6 @@ namespace System.Net.Sockets
 
         // BytesTransferred property variables.
         private int _bytesTransferred;
-
-        // Completed event property variables.
-        private event EventHandler<SocketAsyncEventArgs> _completed;
-        private bool _completedChanged;
 
         // DisconnectReuseSocket propery variables.
         private bool _disconnectReuseSocket;
@@ -70,9 +67,11 @@ namespace System.Net.Sockets
         internal Internals.SocketAddress _socketAddress;
 
         // Misc state variables.
+        private readonly bool _flowExecutionContext;
         private ExecutionContext _context;
         private static readonly ContextCallback s_executionCallback = ExecutionCallback;
         private Socket _currentSocket;
+        private bool _userSocket; // if false when performing Connect, _currentSocket should be disposed
         private bool _disposeCalled;
 
         // Controls thread safety via Interlocked.
@@ -84,8 +83,18 @@ namespace System.Net.Sockets
 
         private MultipleConnectAsync _multipleConnect;
 
-        public SocketAsyncEventArgs()
+        public SocketAsyncEventArgs() : this(flowExecutionContext: true)
         {
+        }
+
+        /// <summary>Initialize the SocketAsyncEventArgs</summary>
+        /// <param name="flowExecutionContext">
+        /// Whether to capture and flow ExecutionContext. ExecutionContext flow should only
+        /// be disabled if it's going to be handled by higher layers.
+        /// </param>
+        internal SocketAsyncEventArgs(bool flowExecutionContext)
+        {
+            _flowExecutionContext = flowExecutionContext;
             InitializeInternals();
         }
 
@@ -106,7 +115,7 @@ namespace System.Net.Sockets
             {
                 if (_bufferIsExplicitArray)
                 {
-                    bool success = _buffer.TryGetArray(out ArraySegment<byte> arraySegment);
+                    bool success = MemoryMarshal.TryGetArray(_buffer, out ArraySegment<byte> arraySegment);
                     Debug.Assert(success);
                     return arraySegment.Array;
                 }
@@ -187,23 +196,11 @@ namespace System.Net.Sockets
             get { return _bytesTransferred; }
         }
 
-        public event EventHandler<SocketAsyncEventArgs> Completed
-        {
-            add
-            {
-                _completed += value;
-                _completedChanged = true;
-            }
-            remove
-            {
-                _completed -= value;
-                _completedChanged = true;
-            }
-        }
+        public event EventHandler<SocketAsyncEventArgs> Completed;
 
         protected virtual void OnCompleted(SocketAsyncEventArgs e)
         {
-            _completed?.Invoke(e._currentSocket, e);
+            Completed?.Invoke(e._currentSocket, e);
         }
 
         // DisconnectResuseSocket property.
@@ -432,6 +429,9 @@ namespace System.Net.Sockets
         {
             CompleteCore();
 
+            // Clear any ExecutionContext that may have been captured.
+            _context = null;
+
             // Mark as not in-use.
             _operating = Free;
 
@@ -506,25 +506,20 @@ namespace System.Net.Sockets
                 ThrowForNonFreeStatus(status);
             }
 
-            // Set the operation type.
+            // Set the operation type and store the socket as current.
             _completedOperation = operation;
+            _currentSocket = socket;
 
-            // Prepare execution context for callback.
-            // If event delegates have changed or socket has changed
-            // then discard any existing context.
-            if (_completedChanged || socket != _currentSocket)
-            {
-                _completedChanged = false;
-                _currentSocket = socket;
-                _context = null;
-            }
-
-            // Capture execution context if none already.
-            if (_context == null)
+            // Capture execution context if needed (it is unless explicitly disabled).
+            if (_flowExecutionContext)
             {
                 _context = ExecutionContext.Capture();
             }
+
+            StartOperationCommonCore();
         }
+
+        partial void StartOperationCommonCore();
 
         internal void StartOperationAccept()
         {
@@ -556,10 +551,11 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void StartOperationConnect(MultipleConnectAsync multipleConnect = null)
+        internal void StartOperationConnect(MultipleConnectAsync multipleConnect, bool userSocket)
         {
             _multipleConnect = multipleConnect;
             _connectSocket = null;
+            _userSocket = userSocket;
         }
 
         internal void CancelConnectAsync()
@@ -590,7 +586,18 @@ namespace System.Net.Sockets
 
             // This will be null if we're doing a static ConnectAsync to a DnsEndPoint with AddressFamily.Unspecified;
             // the attempt socket will be closed anyways, so not updating the state is OK.
-            _currentSocket?.UpdateStatusAfterSocketError(socketError);
+            // If we're doing a static ConnectAsync to an IPEndPoint, we need to dispose
+            // of the socket, as we manufactured it and the caller has no opportunity to do so.
+            Socket currentSocket = _currentSocket;
+            if (currentSocket != null)
+            {
+                currentSocket.UpdateStatusAfterSocketError(socketError);
+                if (_completedOperation == SocketAsyncOperation.Connect && !_userSocket)
+                {
+                    currentSocket.Dispose();
+                    _currentSocket = null;
+                }
+            }
 
             Complete();
         }
@@ -606,37 +613,33 @@ namespace System.Net.Sockets
 
         internal void FinishOperationAsyncFailure(SocketError socketError, int bytesTransferred, SocketFlags flags)
         {
-            SetResults(socketError, bytesTransferred, flags);
+            ExecutionContext context = _context; // store context before it's cleared as part of finishing the operation
 
-            // This will be null if we're doing a static ConnectAsync to a DnsEndPoint with AddressFamily.Unspecified;
-            // the attempt socket will be closed anyways, so not updating the state is OK.
-            _currentSocket?.UpdateStatusAfterSocketError(socketError);
+            FinishOperationSyncFailure(socketError, bytesTransferred, flags);
 
-            Complete();
-            if (_context == null)
+            if (context == null)
             {
                 OnCompleted(this);
             }
             else
             {
-                ExecutionContext.Run(_context, s_executionCallback, this);
+                ExecutionContext.Run(context, s_executionCallback, this);
             }
         }
 
-        internal void FinishOperationAsyncFailure(Exception exception, int bytesTransferred, SocketFlags flags)
+        internal void FinishConnectByNameAsyncFailure(Exception exception, int bytesTransferred, SocketFlags flags)
         {
-            SetResults(exception, bytesTransferred, flags);
+            ExecutionContext context = _context; // store context before it's cleared as part of finishing the operation
 
-            _currentSocket?.UpdateStatusAfterSocketError(_socketError);
+            FinishConnectByNameSyncFailure(exception, bytesTransferred, flags);
 
-            Complete();
-            if (_context == null)
+            if (context == null)
             {
                 OnCompleted(this);
             }
             else
             {
-                ExecutionContext.Run(_context, s_executionCallback, this);
+                ExecutionContext.Run(context, s_executionCallback, this);
             }
         }
 
@@ -647,14 +650,15 @@ namespace System.Net.Sockets
             _connectSocket = connectSocket;
 
             // Complete the operation and raise the event.
+            ExecutionContext context = _context; // store context before it's cleared as part of completing the operation
             Complete();
-            if (_context == null)
+            if (context == null)
             {
                 OnCompleted(this);
             }
             else
             {
-                ExecutionContext.Run(_context, s_executionCallback, this);
+                ExecutionContext.Run(context, s_executionCallback, this);
             }
         }
 
@@ -756,16 +760,18 @@ namespace System.Net.Sockets
 
         internal void FinishOperationAsyncSuccess(int bytesTransferred, SocketFlags flags)
         {
+            ExecutionContext context = _context; // store context before it's cleared as part of finishing the operation
+
             FinishOperationSyncSuccess(bytesTransferred, flags);
 
             // Raise completion event.
-            if (_context == null)
+            if (context == null)
             {
                 OnCompleted(this);
             }
             else
             {
-                ExecutionContext.Run(_context, s_executionCallback, this);
+                ExecutionContext.Run(context, s_executionCallback, this);
             }
         }
     }

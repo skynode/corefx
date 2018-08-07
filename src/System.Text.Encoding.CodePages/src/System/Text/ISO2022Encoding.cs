@@ -34,7 +34,6 @@
 
 using System.Globalization;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Text;
 using System.Runtime.InteropServices;
 using System;
@@ -375,7 +374,7 @@ namespace System.Text
                 // We may have a left over character from last time, try and process it.
                 if (charLeftOver > 0)
                 {
-                    Debug.Assert(Char.IsHighSurrogate(charLeftOver), "[ISO2022Encoding.GetBytesCP5022xJP]leftover character should be high surrogate");
+                    Debug.Assert(char.IsHighSurrogate(charLeftOver), "[ISO2022Encoding.GetBytesCP5022xJP]leftover character should be high surrogate");
 
                     // It has to be a high surrogate, which we don't support, so it has to be a fallback
                     buffer.Fallback(charLeftOver);
@@ -616,7 +615,7 @@ namespace System.Text
                 // We may have a l left over character from last time, try and process it.
                 if (charLeftOver > 0)
                 {
-                    Debug.Assert(Char.IsHighSurrogate(charLeftOver), "[ISO2022Encoding.GetBytesCP50225KR]leftover character should be high surrogate");
+                    Debug.Assert(char.IsHighSurrogate(charLeftOver), "[ISO2022Encoding.GetBytesCP50225KR]leftover character should be high surrogate");
 
                     // It has to be a high surrogate, which we don't support, so it has to be a fallback
                     buffer.Fallback(charLeftOver);
@@ -762,7 +761,7 @@ namespace System.Text
                 // We may have a left over character from last time, try and process it.
                 if (charLeftOver > 0)
                 {
-                    Debug.Assert(Char.IsHighSurrogate(charLeftOver), "[ISO2022Encoding.GetBytesCP52936]leftover character should be high surrogate");
+                    Debug.Assert(char.IsHighSurrogate(charLeftOver), "[ISO2022Encoding.GetBytesCP52936]leftover character should be high surrogate");
 
                     // It has to be a high surrogate, which we don't support, so it has to be a fallback
                     buffer.Fallback(charLeftOver);
@@ -1696,7 +1695,6 @@ namespace System.Text
         {
             if (charCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             // Characters would be # of characters + 1 in case high surrogate is ? * max fallback
             long byteCount = (long)charCount + 1;
@@ -1750,7 +1748,6 @@ namespace System.Text
         {
             if (byteCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             int perChar = 1;
             int extraDecoder = 1;

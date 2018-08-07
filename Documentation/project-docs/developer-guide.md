@@ -52,7 +52,7 @@ For more details on the build configurations see [project-guidelines](../coding-
 
 **Common full clean build and test run**
 ```
-clean --all
+clean -all
 build
 build-tests
 ```
@@ -251,6 +251,13 @@ msbuild /t:Test "/p:XunitOptions=-class Test.ClassUnderTests"
 There may be multiple projects in some directories so you may need to specify the path to a specific test project to get it to build and run the tests.
 
 Tests participate in the incremental build.  This means that if tests have already been run, and inputs to the incremental build have not changed, rerunning the tests target will not execute the test runner again.  To force re-executing tests in this situation, use `/p:ForceRunTests=true`.
+
+#### Running a single test on the command line
+
+To quickly run or debug a single test from the command line, set the XunitMethodName property (found in Tools\tests.targets) to the full method name (including namespace), e.g.:
+```cmd
+msbuild /t:RebuildAndTest /p:XunitMethodName={FullyQualifiedNamespace}.{ClassName}.{MethodName}
+```
 
 #### Running tests in a different target framework
 
@@ -484,12 +491,12 @@ msbuild /p:CoreCLROverridePath=d:\git\coreclr\bin\Product\Windows_NT.x64.Release
 
 By convention the project will look for PDBs in a directory under `$(CoreCLROverridePath)/PDB` and if found will also copy them. If not found no PDBs will be copied. If you want to explicitly set the PDB path then you can pass `CoreCLRPDBOverridePath` property to that PDB directory.
 
-Also to aide with code coverage runs if the `Coverage` property is set to true we will skip copying any *.ni.* files to the output.
-
-Once you have updated your CoreCLR you can run tests however you usually do (via build-tests.cmd, individual test project, in VS, etc) and it should be using your copy of CoreCLR. If you want to verify that your bits are being used have a look in `\corefx\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\9.9.9` which is the shared framework directory used by corefx tests.
+Once you have updated your CoreCLR you can run tests however you usually do (via build-tests.cmd, individual test project, in VS, etc) and it should be using your copy of CoreCLR.
 
 If you prefer, you can use a Debug build of System.Private.CoreLib, but if you do you must also use a Debug build of the native portions of the runtime, e.g. coreclr.dll. Tests with a Debug runtime will execute much more slowly than with Release runtime bits.
 
 To collect code coverage that includes types in System.Private.CoreLib.dll, you'll need to follow the above steps, then
 
-`msbuild /p:CoreCLROverridePath=d:\git\coreclr\bin\Product\Windows_NT.x64.Release\ /t:rebuildandtest /p:Coverage=true /p:CodeCoverageAssemblies="System.Private.CoreLib"`
+`msbuild /t:rebuildandtest /p:Coverage=true /p:CodeCoverageAssemblies="System.Private.CoreLib"`
+
+In order to facilitate coverage tools that perform IL rewrite a dedicated shared framework directory is created by default for coverage runs. This shared runtime is copied from the default shared test runtime (the one with version 9.9.9, e.g.: `\corefx\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\9.9.9`). This behavior can be overriden by adding `/p:UseCoverageDedicatedRuntime=false` to the build command used to capture code coverage, which will cause the coverage run to use the same shared runtime as a test run using the native image of System.Private.CoreLib.dll, causing loss of source coverage information for it.

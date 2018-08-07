@@ -17,19 +17,34 @@
       <Imports>netcore50</Imports>
       <CompatibleWith>netstandard1.4</CompatibleWith>
     </TargetGroups>
+    <TargetGroups Include="uap10.0.16299aot">
+      <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
+      <NuGetTargetMoniker>UAP,Version=v10.0.16299</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>uap10.0.16299</NuGetTargetMonikerShort>
+      <UWPCompatible>true</UWPCompatible>
+      <Imports>netcore50aot</Imports>
+      <CompatibleWith>uap10.0.16299;netstandard</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="uap10.0.16299">
+      <NuGetTargetMoniker>UAP,Version=v10.0.16299</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>uap10.0.16299</NuGetTargetMonikerShort>
+      <UWPCompatible>true</UWPCompatible>
+      <Imports>netcore50</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
+    </TargetGroups>
     <TargetGroups Include="uapvnextaot">
       <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
       <NuGetTargetMoniker>$(UAPvNextTFMFull)</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>$(UAPvNextTFM)</NuGetTargetMonikerShort>
       <UWPCompatible>true</UWPCompatible>
-      <Imports>netcore50aot</Imports>
+      <Imports>uap10.0.16299aot</Imports>
       <CompatibleWith>uapvnext;netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="uapvnext">
       <NuGetTargetMoniker>$(UAPvNextTFMFull)</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>$(UAPvNextTFM)</NuGetTargetMonikerShort>
       <UWPCompatible>true</UWPCompatible>
-      <Imports>netcore50</Imports>
+      <Imports>uap10.0.16299</Imports>
       <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
     <!-- uap is an alias for uapvNext any/coreclr runtime -->
@@ -180,19 +195,11 @@
       <Imports>net46</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
-    <!-- netfx is an alias for net461 since that's our primary target as it added ns2.0 support -->
-    <TargetGroups Include="netfx">
-      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
-      <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
-      <NuGetTargetMonikerShort>net461</NuGetTargetMonikerShort>
-      <Imports>net461</Imports>
-      <CompatibleWith>netstandard</CompatibleWith>
-    </TargetGroups>
     <TargetGroups Include="net462">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.2</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>net462</NuGetTargetMonikerShort>
-      <Imports>netfx</Imports>
+      <Imports>net461</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net463">
@@ -214,6 +221,21 @@
       <NuGetTargetMoniker>.NETFramework,Version=v4.7.1</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>net471</NuGetTargetMonikerShort>
       <Imports>net47</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="net472">
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.2</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.7.2</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net472</NuGetTargetMonikerShort>
+      <Imports>net471</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
+    </TargetGroups>
+    <!-- netfx is an alias for net472 -->
+    <TargetGroups Include="netfx">
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.2</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.7.2</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net472</NuGetTargetMonikerShort>
+      <Imports>net472</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="win8">

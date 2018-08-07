@@ -557,7 +557,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
-            NumberStyles defaultStyle = NumberStyles.Float;
+            NumberStyles defaultStyle = NumberStyles.Number;
 
             NumberFormatInfo emptyFormat = NumberFormatInfo.CurrentInfo;
 
@@ -605,7 +605,7 @@ namespace System.Tests
         {
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
             decimal result;
-            if ((style & ~NumberStyles.Integer) == 0 && style != NumberStyles.None)
+            if ((style & ~NumberStyles.Number) == 0 && style != NumberStyles.None)
             {
                 // Use Parse(string) or Parse(string, IFormatProvider)
                 if (isDefaultProvider)
@@ -638,7 +638,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
         {
-            NumberStyles defaultStyle = NumberStyles.Float;
+            NumberStyles defaultStyle = NumberStyles.Number;
 
             var customFormat = new NumberFormatInfo();
             customFormat.CurrencySymbol = "$";
@@ -669,7 +669,7 @@ namespace System.Tests
         {
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
             decimal result;
-            if ((style & ~NumberStyles.Integer) == 0 && style != NumberStyles.None && (style & NumberStyles.AllowLeadingWhite) == (style & NumberStyles.AllowTrailingWhite))
+            if ((style & ~NumberStyles.Number) == 0 && style != NumberStyles.None && (style & NumberStyles.AllowLeadingWhite) == (style & NumberStyles.AllowTrailingWhite))
             {
                 // Use Parse(string) or Parse(string, IFormatProvider)
                 if (isDefaultProvider)
@@ -1455,7 +1455,223 @@ namespace System.Tests
             }
         }
 
-        static decimal[] GetRandomData(out BigDecimal[] bigDecimals)
+        public static class BigIntegerMod
+        {
+            [Fact]
+            [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have fixes for https://github.com/dotnet/coreclr/issues/12605")]
+            public static void Test()
+            {
+                int overflowBudget = 1000;
+                decimal[] decimalValues = GetRandomData(out BigDecimal[] bigDecimals);
+                for (int i = 0; i < decimalValues.Length; i++)
+                {
+                    decimal d1 = decimalValues[i];
+                    BigDecimal b1 = bigDecimals[i];
+                    for (int j = 0; j < decimalValues.Length; j++)
+                    {
+                        decimal d2 = decimalValues[j];
+                        if (Math.Sign(d2) == 0)
+                            continue;
+                        BigDecimal expected = b1.Mod(bigDecimals[j], out bool expectedOverflow);
+                        if (expectedOverflow)
+                        {
+                            if (--overflowBudget < 0)
+                                continue;
+                            try
+                            {
+                                decimal actual = d1 % d2;
+                                throw new Xunit.Sdk.AssertActualExpectedException(typeof(OverflowException), actual, d1 + " % " + d2);
+                            }
+                            catch (OverflowException) { }
+                        }
+                        else
+                            unsafe
+                            {
+                                try
+                                {
+                                    decimal actual = d1 % d2;
+                                    if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
+                                        throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " % " + d2);
+                                }
+                                catch (OverflowException actual)
+                                {
+                                    throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " % " + d2);
+                                }
+                            }
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public static void BigInteger_Floor()
+        {
+            decimal[] decimalValues = GetRandomData(out BigDecimal[] bigDecimals);
+            for (int i = 0; i < decimalValues.Length; i++)
+            {
+                decimal d1 = decimalValues[i];
+                BigDecimal expected = bigDecimals[i].Floor();
+                decimal actual = decimal.Floor(d1);
+                unsafe
+                {
+                    if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
+                        throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " Floor");
+                }
+            }
+        }
+
+        [Fact]
+        public static void BigInteger_Ceiling()
+        {
+            decimal[] decimalValues = GetRandomData(out BigDecimal[] bigDecimals);
+            for (int i = 0; i < decimalValues.Length; i++)
+            {
+                decimal d1 = decimalValues[i];
+                BigDecimal expected = bigDecimals[i].Ceiling();
+                decimal actual = decimal.Ceiling(d1);
+                unsafe
+                {
+                    if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
+                        throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " Ceiling");
+                }
+            }
+        }
+
+        [Fact]
+        public static void BigInteger_Truncate()
+        {
+            decimal[] decimalValues = GetRandomData(out BigDecimal[] bigDecimals);
+            for (int i = 0; i < decimalValues.Length; i++)
+            {
+                decimal d1 = decimalValues[i];
+                BigDecimal expected = bigDecimals[i].Truncate();
+                decimal actual = decimal.Truncate(d1);
+                unsafe
+                {
+                    if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
+                        throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " Truncate");
+                }
+            }
+        }
+
+        [Fact]
+        public static void BigInteger_ToInt32()
+        {
+            decimal[] decimalValues = GetRandomData(out BigDecimal[] bigDecimals);
+            for (int i = 0; i < decimalValues.Length; i++)
+            {
+                decimal d1 = decimalValues[i];
+                int expected = bigDecimals[i].ToInt32(out bool expectedOverflow);
+                if (expectedOverflow)
+                {
+                    try
+                    {
+                        int actual = decimal.ToInt32(d1);
+                        throw new Xunit.Sdk.AssertActualExpectedException(typeof(OverflowException), actual, d1 + " ToInt32");
+                    }
+                    catch (OverflowException) { }
+                }
+                else
+                {
+                    int actual = decimal.ToInt32(d1);
+                    if (expected != actual)
+                        throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " ToInt32");
+                }
+            }
+        }
+
+        [Fact]
+        public static void BigInteger_ToOACurrency()
+        {
+            decimal[] decimalValues = GetRandomData(out BigDecimal[] bigDecimals);
+            for (int i = 0; i < decimalValues.Length; i++)
+            {
+                decimal d1 = decimalValues[i];
+                long expected = bigDecimals[i].ToOACurrency(out bool expectedOverflow);
+                if (expectedOverflow)
+                {
+                    try
+                    {
+                        long actual = decimal.ToOACurrency(d1);
+                        throw new Xunit.Sdk.AssertActualExpectedException(typeof(OverflowException), actual, d1 + " ToOACurrency");
+                    }
+                    catch (OverflowException) { }
+                }
+                else
+                {
+                    long actual = decimal.ToOACurrency(d1);
+                    if (expected != actual)
+                        throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " ToOACurrency");
+                }
+            }
+        }
+
+        [Fact]
+        public static void BigInteger_Round()
+        {
+            decimal[] decimalValues = GetRandomData(out BigDecimal[] bigDecimals);
+            for (int i = 0; i < decimalValues.Length; i++)
+            {
+                decimal d1 = decimalValues[i];
+                BigDecimal b1 = bigDecimals[i];
+                for (int j = 0; j <= 28; j++)
+                {
+
+                    BigDecimal expected = b1.Round(j);
+                    decimal actual = decimal.Round(d1, j);
+                    unsafe
+                    {
+                        if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
+                            throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " Round(" + j + ")");
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public static void BigInteger_RoundAwayFromZero()
+        {
+            decimal[] decimalValues = GetRandomData(out BigDecimal[] bigDecimals);
+            for (int i = 0; i < decimalValues.Length; i++)
+            {
+                decimal d1 = decimalValues[i];
+                BigDecimal b1 = bigDecimals[i];
+                for (int j = 0; j <= 28; j++)
+                {
+
+                    BigDecimal expected = b1.RoundAwayFromZero(j);
+                    decimal actual = decimal.Round(d1, j, MidpointRounding.AwayFromZero);
+                    unsafe
+                    {
+                        if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
+                            throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " RoundAwayFromZero(" + j + ")");
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have the fix for this bug")]
+        public static new void GetHashCode()
+        {
+            var dict = new Dictionary<string, (int hash, string value)>();
+            foreach (decimal d in GetRandomData(out _, hash: true))
+            {
+                string value = d.ToString(CultureInfo.InvariantCulture);
+                string key = value[value.Length - 1] == '0' && value.Contains('.') ? value.AsSpan().TrimEnd('0').TrimEnd('.').ToString() : value;
+                int hash = d.GetHashCode();
+                if (!dict.TryGetValue(key, out var ex))
+                {
+                    dict.Add(key, (hash, value));
+                }
+                else if (ex.hash != hash)
+                {
+                    throw new Xunit.Sdk.XunitException($"Decimal {key} has multiple hash codes: {ex.hash} ({ex.value}) and {hash} ({value})");
+                }
+            }
+        }
+
+        static decimal[] GetRandomData(out BigDecimal[] bigDecimals, bool hash = false)
         {
             // some static data to test the limits
             var list = new List<decimal> { new decimal(0, 0, 0, true, 0), decimal.Zero, decimal.MinusOne, decimal.One, decimal.MinValue, decimal.MaxValue,
@@ -1474,9 +1690,26 @@ namespace System.Tests
                             if (!unique.Add(d.ToString(CultureInfo.InvariantCulture)))
                                 continue; // skip duplicates
                             list.Add(d);
+
+                            if (hash)
+                            {
+                                // generate all possible variants of the number up-to max decimal scale
+                                for (byte lastScale = scale; lastScale < 28;)
+                                {
+                                    d *= 1.0m;
+                                    unsafe
+                                    {
+                                        byte curScale = (byte)(*(uint*)&d >> BigDecimal.ScaleShift);
+                                        if (curScale <= lastScale)
+                                            break;
+                                        lastScale = curScale;
+                                    }
+                                    list.Add(d);
+                                }
+                            }
                         }
             decimal[] decimalValues = list.ToArray();
-            bigDecimals = Array.ConvertAll(decimalValues, d => new BigDecimal(d));
+            bigDecimals = hash ? null : Array.ConvertAll(decimalValues, d => new BigDecimal(d));
             return decimalValues;
 
             // While the decimals are random in general,
@@ -1631,6 +1864,81 @@ namespace System.Tests
                 return new BigDecimal(quo, (byte)scale);
             }
 
+            public BigDecimal Mod(BigDecimal den, out bool overflow)
+            {
+                if (den.Integer.IsZero)
+                {
+                    throw new DivideByZeroException();
+                }
+                int sign = Integer.Sign;
+                if (sign == 0)
+                {
+                    overflow = false;
+                    return this;
+                }
+                if (den.Integer.Sign != sign)
+                {
+                    den = -den;
+                }
+
+                int cmp = CompareTo(den) * sign;
+                if (cmp <= 0)
+                {
+                    overflow = false;
+                    return cmp < 0 ? this : new BigDecimal(default, Math.Max(Scale, den.Scale));
+                }
+
+                // The obvious solution would be to calculate the integer remainder using the larger scaling factor,
+                // but the current Decimal.Remainder implementation does several intermediate calculations that may round or overflow (e.g., 5 % 0.0000000000000000000000000003m or decimal.MaxValue % 0.1m),
+                // so a similar approach must be used here and the rest of this function matches all Decimal.Remainder quirks.
+                // https://github.com/dotnet/coreclr/issues/12605
+
+                // This piece of code is to work around the fact that Dividing a decimal with 28 digits number by decimal which causes causes the result to be 28 digits, can cause to be incorrectly rounded up.
+                // eg. Decimal.MaxValue / 2 * Decimal.MaxValue will overflow since the division by 2 was rounded instead of being truncked.
+                BigDecimal num = Add(-den, out overflow);
+                if (overflow)
+                {
+                    return default;
+                }
+
+                // Formula:  num - (RoundTowardsZero(num / den) * den)
+                BigDecimal res = num.Div(den, out overflow);
+                if (overflow)
+                {
+                    return default;
+                }
+                res = res.Truncate().Mul(den, out overflow);
+                if (overflow)
+                {
+                    return default;
+                }
+                res = num.Add(-res, out overflow);
+                if (overflow)
+                {
+                    return default;
+                }
+
+                // See if the result has crossed 0
+                if (!res.Integer.IsZero && res.Integer.Sign != sign)
+                {
+                    if (res.Scale == 28 && BigInteger.Abs(res.Integer) == 1)
+                    {
+                        // Certain Remainder operations on decimals with 28 significant digits round to [+-]0.0000000000000000000000000001m instead of [+-]0m during the intermediate calculations.
+                        // This might give incorrectly rounded results (e.g., 5 % 0.0000000000000000000000000003m = 0.0000000000000000000000000002m but returns 0.0000000000000000000000000001m)
+                        res = -res;
+                    }
+                    else
+                    {
+                        // If the division rounds up because it runs out of digits, the multiplied result can end up with a larger absolute value and the result of the formula crosses 0.
+                        // To correct it can add the divisor back.
+                        res = res.Add(den, out overflow);
+                    }
+                }
+                return res;
+            }
+
+            public static BigDecimal operator -(BigDecimal value) => new BigDecimal(-value.Integer, value.Scale);
+
             static readonly BigInteger MaxInteger = (new BigInteger(ulong.MaxValue) << 32) | uint.MaxValue;
             static readonly BigInteger MaxInteger32 = uint.MaxValue;
             static readonly double Log2To10 = Math.Log(2) / Math.Log(10);
@@ -1697,6 +2005,69 @@ namespace System.Tests
                     res = res.Sign < 0 ? -abs : abs;
                 }
                 return false;
+            }
+
+            public BigDecimal Floor() => FloorCeiling(Integer.Sign < 0);
+            public BigDecimal Ceiling() => FloorCeiling(Integer.Sign > 0);
+
+            BigDecimal FloorCeiling(bool up)
+            {
+                if (Scale == 0)
+                    return this;
+                var res = BigInteger.DivRem(Integer, Pow10[Scale], out var remainder);
+                if (up && !remainder.IsZero)
+                    res += Integer.Sign;
+                return new BigDecimal(res, 0);
+            }
+
+            public BigDecimal Truncate() => Scale == 0 ? this : new BigDecimal(Integer / Pow10[Scale], 0);
+
+            public int ToInt32(out bool expectedOverflow)
+            {
+                var i = Truncate().Integer;
+                return (expectedOverflow = i < int.MinValue || i > int.MaxValue) ? 0 : (int)i;
+            }
+
+            public long ToOACurrency(out bool expectedOverflow)
+            {
+                var i = Integer;
+                if (Scale < 4)
+                    i *= Pow10[4 - Scale];
+                else if (Scale > 4)
+                    i = RoundToEven(i, Scale - 4);
+                return (expectedOverflow = i < long.MinValue || i > long.MaxValue) ? 0 : (long)i;
+            }
+
+            static BigInteger RoundToEven(BigInteger value, int scale)
+            {
+                var pow = Pow10[scale];
+                var res = BigInteger.DivRem(value, pow, out var remainder);
+                pow >>= 1;
+                remainder = BigInteger.Abs(remainder);
+                if (remainder > pow || remainder == pow && !res.IsEven)
+                    res += value.Sign;
+                return res;
+            }
+
+            public BigDecimal Round(int scale)
+            {
+                var diff = Scale - scale;
+                if (diff <= 0)
+                    return this;
+                return new BigDecimal(RoundToEven(Integer, diff), (byte)scale);
+            }
+
+            public BigDecimal RoundAwayFromZero(int scale)
+            {
+                var diff = Scale - scale;
+                if (diff <= 0)
+                    return this;
+
+                var pow = Pow10[diff];
+                var res = BigInteger.DivRem(Integer, pow, out var remainder);
+                if (BigInteger.Abs(remainder) >= (pow >> 1))
+                    res += Integer.Sign;
+                return new BigDecimal(res, (byte)scale);
             }
         }
     }

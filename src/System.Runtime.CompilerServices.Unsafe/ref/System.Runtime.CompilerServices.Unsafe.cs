@@ -30,6 +30,8 @@ namespace System.Runtime.CompilerServices
         public unsafe static void InitBlock(void* startAddress, byte value, uint byteCount) { }
         public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount) { }
         public unsafe static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount) { }
+        public static bool IsAddressGreaterThan<T>(ref T left, ref T right) { throw null; }
+        public static bool IsAddressLessThan<T>(ref T left, ref T right) { throw null; }
         public unsafe static T Read<T>(void* source) { throw null; }
         public unsafe static T ReadUnaligned<T>(void* source) { throw null; }
         public static T ReadUnaligned<T>(ref byte source) { throw null; }
@@ -38,6 +40,7 @@ namespace System.Runtime.CompilerServices
         public static ref T Subtract<T>(ref T source, int elementOffset) { throw null; }
         public unsafe static void* Subtract<T>(void* source, int elementOffset) { throw null; }
         public static ref T Subtract<T>(ref T source, System.IntPtr elementOffset) { throw null; }
+        public static ref T Unbox<T>(object box) where T : struct { throw null; }
         public unsafe static void Write<T>(void* destination, T value) { }
         public unsafe static void WriteUnaligned<T>(void* destination, T value) { }
         public static void WriteUnaligned<T>(ref byte destination, T value) { }

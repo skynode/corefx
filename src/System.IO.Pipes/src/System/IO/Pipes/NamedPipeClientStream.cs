@@ -7,6 +7,7 @@ using System.Security;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace System.IO.Pipes
 {
@@ -26,33 +27,33 @@ namespace System.IO.Pipes
         private readonly PipeDirection _direction;
 
         // Creates a named pipe client using default server (same machine, or "."), and PipeDirection.InOut 
-        public NamedPipeClientStream(String pipeName)
+        public NamedPipeClientStream(string pipeName)
             : this(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None)
         { 
         }
 
-        public NamedPipeClientStream(String serverName, String pipeName)
+        public NamedPipeClientStream(string serverName, string pipeName)
             : this(serverName, pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None)
         {
         }
 
-        public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction)
+        public NamedPipeClientStream(string serverName, string pipeName, PipeDirection direction)
             : this(serverName, pipeName, direction, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None)
         {
         }
 
-        public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction, PipeOptions options)
+        public NamedPipeClientStream(string serverName, string pipeName, PipeDirection direction, PipeOptions options)
             : this(serverName, pipeName, direction, options, TokenImpersonationLevel.None, HandleInheritability.None)
         {
         }
 
-        public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction,
+        public NamedPipeClientStream(string serverName, string pipeName, PipeDirection direction,
             PipeOptions options, TokenImpersonationLevel impersonationLevel)
             : this(serverName, pipeName, direction, options, impersonationLevel, HandleInheritability.None)
         {
         }
 
-        public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction,
+        public NamedPipeClientStream(string serverName, string pipeName, PipeDirection direction,
             PipeOptions options, TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability)
             : base(direction, 0)
         {
@@ -72,7 +73,7 @@ namespace System.IO.Pipes
             {
                 throw new ArgumentException(SR.Argument_EmptyServerName);
             }
-            if ((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous)) != 0)
+            if ((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly)) != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_OptionsInvalid);
             }
@@ -83,6 +84,10 @@ namespace System.IO.Pipes
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
                 throw new ArgumentOutOfRangeException(nameof(inheritability), SR.ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable);
+            }
+            if ((options & PipeOptions.CurrentUserOnly) != 0)
+            {
+                IsCurrentUserOnly = true;
             }
 
             _normalizedPipePath = GetPipePath(serverName, pipeName);

@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
@@ -13,42 +14,70 @@ namespace System.Security.Cryptography.Tests.Asn1
     public static class SimpleSerialize
     {
         [Fact]
+        public static void SerializeNullAlgorithmIdentifier()
+        {
+            AlgorithmIdentifierAsn identifier = new AlgorithmIdentifierAsn
+            {
+                Algorithm = new Oid(null, "SHA-2-256"),
+                Parameters = new byte[] { 5, 0 },
+            };
+
+            Assert.Throws<CryptographicException>(
+                () => AsnSerializer.Serialize(identifier, AsnEncodingRules.DER));
+        }
+
+        [Fact]
+        public static void SerializeNullOidString()
+        {
+            AnyWithExpectedTag anyVal = new AnyWithExpectedTag
+            {
+                Id = null,
+                Data = "3000".HexToByteArray(),
+            };
+
+            Assert.Throws<CryptographicException>(
+                () => AsnSerializer.Serialize(anyVal, AsnEncodingRules.DER));
+        }
+
+        [Fact]
         public static void SerializeAlgorithmIdentifier()
         {
-            AlgorithmIdentifier identifier = new AlgorithmIdentifier
+            AlgorithmIdentifierAsn identifier = new AlgorithmIdentifierAsn
             {
                 Algorithm = new Oid("2.16.840.1.101.3.4.2.1", "SHA-2-256"),
                 Parameters = new byte[] { 5, 0 },
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(identifier, AsnEncodingRules.DER);
+            using (AsnWriter writer = AsnSerializer.Serialize(identifier, AsnEncodingRules.DER))
+            {
+                const string ExpectedHex =
+                    "300D" +
+                        "0609608648016503040201" +
+                        "0500";
 
-            const string ExpectedHex =
-                "300D" +
-                    "0609608648016503040201" +
-                    "0500";
-
-            Assert.Equal(ExpectedHex, writer.Encode().ByteArrayToHex());
+                Assert.Equal(ExpectedHex, writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
         public static void SerializeAlgorithmIdentifier_CER()
         {
-            AlgorithmIdentifier identifier = new AlgorithmIdentifier
+            AlgorithmIdentifierAsn identifier = new AlgorithmIdentifierAsn
             {
                 Algorithm = new Oid("2.16.840.1.101.3.4.2.1", "SHA-2-256"),
                 Parameters = new byte[] { 5, 0 },
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(identifier, AsnEncodingRules.CER);
+            using (AsnWriter writer = AsnSerializer.Serialize(identifier, AsnEncodingRules.CER))
+            {
+                const string ExpectedHex =
+                    "3080" +
+                        "0609608648016503040201" +
+                        "0500" +
+                        "0000";
 
-            const string ExpectedHex =
-                "3080" +
-                    "0609608648016503040201" +
-                    "0500" +
-                    "0000";
-
-            Assert.Equal(ExpectedHex, writer.Encode().ByteArrayToHex());
+                Assert.Equal(ExpectedHex, writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -147,17 +176,21 @@ namespace System.Security.Cryptography.Tests.Asn1
                 BigInteger = BigInteger.Parse("0102030405060708090A0B0C0D0E0F", NumberStyles.HexNumber),
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(allTheThings, AsnEncodingRules.CER);
-            Assert.Equal(ExpectedHex, writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(allTheThings, AsnEncodingRules.CER))
+            {
+                Assert.Equal(ExpectedHex, writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
         public static void SerializeChoice_Null()
         {
             DirectoryStringClass directoryString = default;
-            AsnWriter writer = AsnSerializer.Serialize(directoryString, AsnEncodingRules.DER);
 
-            Assert.Equal("0500", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(directoryString, AsnEncodingRules.DER))
+            {
+                Assert.Equal("0500", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -168,8 +201,10 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Utf8String = "UTF8",
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(directoryString, AsnEncodingRules.DER);
-            Assert.Equal("0C0455544638", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(directoryString, AsnEncodingRules.DER))
+            {
+                Assert.Equal("0C0455544638", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -180,8 +215,10 @@ namespace System.Security.Cryptography.Tests.Asn1
                 BmpString = "BMP",
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(directoryString, AsnEncodingRules.DER);
-            Assert.Equal("1E060042004D0050", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(directoryString, AsnEncodingRules.DER))
+            {
+                Assert.Equal("1E060042004D0050", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -192,8 +229,10 @@ namespace System.Security.Cryptography.Tests.Asn1
                 PrintableString = "Printable",
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(directoryString, AsnEncodingRules.DER);
-            Assert.Equal("13095072696E7461626C65", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(directoryString, AsnEncodingRules.DER))
+            {
+                Assert.Equal("13095072696E7461626C65", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -226,8 +265,10 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Ascii = "IA5",
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(hybrid, AsnEncodingRules.DER);
-            Assert.Equal("1603494135", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(hybrid, AsnEncodingRules.DER))
+            {
+                Assert.Equal("1603494135", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -235,14 +276,16 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             var hybrid = new FlexibleStringClassHybrid
             {
-                DirectoryString = new DirectoryString
+                DirectoryString = new DirectoryStringAsn
                 {
                     Utf8String = "Marco",
                 },
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(hybrid, AsnEncodingRules.DER);
-            Assert.Equal("0C054D6172636F", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(hybrid, AsnEncodingRules.DER))
+            {
+                Assert.Equal("0C054D6172636F", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -250,14 +293,16 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             var hybrid = new FlexibleStringClassHybrid
             {
-                DirectoryString = new DirectoryString
+                DirectoryString = new DirectoryStringAsn
                 {
                     BmpString = "Polo",
                 },
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(hybrid, AsnEncodingRules.DER);
-            Assert.Equal("1E080050006F006C006F", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(hybrid, AsnEncodingRules.DER))
+            {
+                Assert.Equal("1E080050006F006C006F", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -271,8 +316,10 @@ namespace System.Security.Cryptography.Tests.Asn1
                 },
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(hybrid, AsnEncodingRules.DER);
-            Assert.Equal("1E080050006F006C006F", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(hybrid, AsnEncodingRules.DER))
+            {
+                Assert.Equal("1E080050006F006C006F", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -286,8 +333,10 @@ namespace System.Security.Cryptography.Tests.Asn1
                 },
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(hybrid, AsnEncodingRules.DER);
-            Assert.Equal("0C054D6172636F", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(hybrid, AsnEncodingRules.DER))
+            {
+                Assert.Equal("0C054D6172636F", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -298,8 +347,10 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Ascii = "IA5",
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(hybrid, AsnEncodingRules.DER);
-            Assert.Equal("1603494135", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(hybrid, AsnEncodingRules.DER))
+            {
+                Assert.Equal("1603494135", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -310,8 +361,10 @@ namespace System.Security.Cryptography.Tests.Asn1
                 DefaultMode = SomeFlagsEnum.BitEleven | SomeFlagsEnum.BitTwo | SomeFlagsEnum.BitFourteen
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(flagsContainer, AsnEncodingRules.DER);
-            Assert.Equal("30050303012012", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(flagsContainer, AsnEncodingRules.DER))
+            {
+                Assert.Equal("30050303012012", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -324,8 +377,10 @@ namespace System.Security.Cryptography.Tests.Asn1
                 ExtnValue = new byte[] { 0x30, 0x00 },
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(extension, AsnEncodingRules.DER);
-            Assert.Equal("30090603551D1304023000", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(extension, AsnEncodingRules.DER))
+            {
+                Assert.Equal("30090603551D1304023000", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -338,8 +393,10 @@ namespace System.Security.Cryptography.Tests.Asn1
                 ExtnValue = new byte[] { 0x03, 0x02, 0x05, 0xA0 },
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(extension, AsnEncodingRules.DER);
-            Assert.Equal("300E0603551D0F0101FF0404030205A0", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(extension, AsnEncodingRules.DER))
+            {
+                Assert.Equal("300E0603551D0F0101FF0404030205A0", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -351,8 +408,10 @@ namespace System.Security.Cryptography.Tests.Asn1
                 ImplicitInt = 0x17,
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(data, AsnEncodingRules.DER);
-            Assert.Equal("3008A003020103020117", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(data, AsnEncodingRules.DER))
+            {
+                Assert.Equal("3008A003020103020117", writer.Encode().ByteArrayToHex());
+            }
         }
 
         [Fact]
@@ -366,8 +425,10 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Data = anyValue,
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(data, AsnEncodingRules.DER);
-            Assert.Equal("30080601003003010100", writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(data, AsnEncodingRules.DER))
+            {
+                Assert.Equal("30080601003003010100", writer.Encode().ByteArrayToHex());
+            }
 
             anyValue[0] = 0xA0;
 
@@ -387,8 +448,52 @@ namespace System.Security.Cryptography.Tests.Asn1
                 IA5String = hasIa5 ? "IA5" : null,
             };
 
-            AsnWriter writer = AsnSerializer.Serialize(data, AsnEncodingRules.DER);
-            Assert.Equal(expectedHex, writer.Encode().ByteArrayToHex());
+            using (AsnWriter writer = AsnSerializer.Serialize(data, AsnEncodingRules.DER))
+            {
+                Assert.Equal(expectedHex, writer.Encode().ByteArrayToHex());
+            }
+        }
+
+        [Fact]
+        public static void WriteNegativeIntegers()
+        {
+            BigIntegers bigIntegers = new BigIntegers
+            {
+                First = -273,
+                Second = new byte[] { 0xFE, 0xED, 0xF0, 0x0D },
+            };
+
+            using (AsnWriter writer = AsnSerializer.Serialize(bigIntegers, AsnEncodingRules.DER))
+            {
+                Assert.Equal("300A0202FEEF0204FEEDF00D", writer.EncodeAsSpan().ByteArrayToHex());
+            }
+        }
+
+        [Theory]
+        [InlineData(0, "3000")]
+        [InlineData(1, "3005A003020101")]
+        public static void SerializeExplicitDefaultValue(int version, string expectedHex)
+        {
+            ExplicitDefaultAsn data = new ExplicitDefaultAsn { Version = version };
+            byte[] encoded;
+
+            using (AsnWriter writer = AsnSerializer.Serialize(data, AsnEncodingRules.DER))
+            {
+                encoded = writer.Encode();
+                Assert.Equal(expectedHex, encoded.ByteArrayToHex());
+            }
+
+            // Deserialize the data back.
+            data = AsnSerializer.Deserialize<ExplicitDefaultAsn>(encoded, AsnEncodingRules.DER);
+            Assert.Equal(version, data.Version);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ExplicitDefaultAsn
+        {
+            [ExpectedTag(0, ExplicitTag = true)]
+            [DefaultValue(0x02, 0x01, 0x00)]
+            public int Version;
         }
     }
 }

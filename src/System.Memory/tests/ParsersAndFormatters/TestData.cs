@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using System.Globalization;
 using System.Collections.Generic;
 
 namespace System.Buffers.Text.Tests
@@ -136,7 +137,7 @@ namespace System.Buffers.Text.Tests
                 yield return -1234L;
                 yield return 12345L;
                 yield return -12345L;
-                
+
                 yield return 4294967294999999999L; // uint.MaxValue * Billion - 1
                 yield return 4294967295000000000L; // uint.MaxValue * Billion
                 yield return 4294967295000000001L; // uint.MaxValue * Billion + 1
@@ -322,6 +323,8 @@ namespace System.Buffers.Text.Tests
             {
                 yield return DateTimeOffset.MinValue;
                 yield return DateTimeOffset.MaxValue;
+                yield return new DateTimeOffset(year: 2017, month: 1, day: 13, hour: 3, minute: 45, second: 32, new TimeSpan(hours: 0, minutes: 30, seconds: 0));
+                yield return new DateTimeOffset(year: 2017, month: 1, day: 13, hour: 3, minute: 45, second: 32, new TimeSpan(hours: 0, minutes: -30, seconds: 0));
                 yield return new DateTimeOffset(year: 2017, month: 1, day: 13, hour: 3, minute: 45, second: 32, new TimeSpan(hours: 8, minutes: 0, seconds: 0));
                 yield return new DateTimeOffset(year: 2017, month: 1, day: 13, hour: 3, minute: 45, second: 32, new TimeSpan(hours: -8, minutes: 0, seconds: 0));
                 yield return new DateTimeOffset(year: 2017, month: 12, day: 31, hour: 23, minute: 59, second: 58, new TimeSpan(hours: 14, minutes: 0, seconds: 0));
@@ -395,16 +398,16 @@ namespace System.Buffers.Text.Tests
                 yield return "0.000045";
                 yield return "000000123.000045";
 
-                yield return decimal.MinValue.ToString("G");
-                yield return decimal.MaxValue.ToString("G");
+                yield return decimal.MinValue.ToString("G", CultureInfo.InvariantCulture);
+                yield return decimal.MaxValue.ToString("G", CultureInfo.InvariantCulture);
 
-                yield return float.MinValue.ToString("G9");
-                yield return float.MaxValue.ToString("G9");
-                yield return float.Epsilon.ToString("G9");
+                yield return float.MinValue.ToString("G9", CultureInfo.InvariantCulture);
+                yield return float.MaxValue.ToString("G9", CultureInfo.InvariantCulture);
+                yield return float.Epsilon.ToString("G9", CultureInfo.InvariantCulture);
 
-                yield return double.MinValue.ToString("G17");
-                yield return double.MaxValue.ToString("G17");
-                yield return double.Epsilon.ToString("G9");
+                yield return double.MinValue.ToString("G17", CultureInfo.InvariantCulture);
+                yield return double.MaxValue.ToString("G17", CultureInfo.InvariantCulture);
+                yield return double.Epsilon.ToString("G9", CultureInfo.InvariantCulture);
 
                 yield return "1e";
                 yield return "1e+";

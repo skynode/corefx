@@ -26,6 +26,8 @@ namespace System.Security.Cryptography.Pkcs
         static partial void PrepareRegistrationDsa(Dictionary<string, CmsSignature> lookup);
         static partial void PrepareRegistrationECDsa(Dictionary<string, CmsSignature> lookup);
 
+        protected abstract bool VerifyKeyType(AsymmetricAlgorithm key);
+
         internal abstract bool VerifySignature(
 #if netcoreapp
             ReadOnlySpan<byte> valueHash,
@@ -47,14 +49,20 @@ namespace System.Security.Cryptography.Pkcs
 #endif
             HashAlgorithmName hashAlgorithmName,
             X509Certificate2 certificate,
+            AsymmetricAlgorithm key,
             bool silent,
             out Oid signatureAlgorithm,
             out byte[] signatureValue);
 
-        internal static CmsSignature Resolve(string signatureAlgorithmOid)
+        internal static CmsSignature ResolveAndVerifyKeyType(string signatureAlgorithmOid, AsymmetricAlgorithm key)
         {
             if (s_lookup.TryGetValue(signatureAlgorithmOid, out CmsSignature processor))
             {
+                if (key != null && !processor.VerifyKeyType(key))
+                {
+                    return null;
+                }
+
                 return processor;
             }
 
@@ -69,11 +77,12 @@ namespace System.Security.Cryptography.Pkcs
 #endif
             HashAlgorithmName hashAlgorithmName,
             X509Certificate2 certificate,
+            AsymmetricAlgorithm key,
             bool silent,
             out Oid oid,
             out ReadOnlyMemory<byte> signatureValue)
         {
-            CmsSignature processor = Resolve(certificate.GetKeyAlgorithm());
+            CmsSignature processor = ResolveAndVerifyKeyType(certificate.GetKeyAlgorithm(), key);
 
             if (processor == null)
             {
@@ -83,7 +92,8 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             byte[] signature;
-            bool signed = processor.Sign(dataHash, hashAlgorithmName, certificate, silent, out oid, out signature);
+            bool signed = processor.Sign(dataHash, hashAlgorithmName, certificate, key, silent, out oid, out signature);
+
             signatureValue = signature;
             return signed;
         }
@@ -153,44 +163,46 @@ namespace System.Security.Cryptography.Pkcs
                 fieldSize * 2 == ieeeSignature.Length,
                 $"ieeeSignature.Length ({ieeeSignature.Length}) must be even");
 
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            writer.PushSequence();
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.PushSequence();
 
 #if netcoreapp
-            // r
-            BigInteger val = new BigInteger(
-                ieeeSignature.Slice(0, fieldSize),
-                isUnsigned: true,
-                isBigEndian: true);
+                // r
+                BigInteger val = new BigInteger(
+                    ieeeSignature.Slice(0, fieldSize),
+                    isUnsigned: true,
+                    isBigEndian: true);
 
-            writer.WriteInteger(val);
+                writer.WriteInteger(val);
 
-            // s
-            val = new BigInteger(
-                ieeeSignature.Slice(fieldSize, fieldSize),
-                isUnsigned: true,
-                isBigEndian: true);
+                // s
+                val = new BigInteger(
+                    ieeeSignature.Slice(fieldSize, fieldSize),
+                    isUnsigned: true,
+                    isBigEndian: true);
 
-            writer.WriteInteger(val);
+                writer.WriteInteger(val);
 #else
-            byte[] buf = new byte[fieldSize + 1];
-            Span<byte> bufWriter = new Span<byte>(buf, 1, fieldSize);
+                byte[] buf = new byte[fieldSize + 1];
+                Span<byte> bufWriter = new Span<byte>(buf, 1, fieldSize);
 
-            ieeeSignature.Slice(0, fieldSize).CopyTo(bufWriter);
-            Array.Reverse(buf);
-            BigInteger val = new BigInteger(buf);
-            writer.WriteInteger(val);
+                ieeeSignature.Slice(0, fieldSize).CopyTo(bufWriter);
+                Array.Reverse(buf);
+                BigInteger val = new BigInteger(buf);
+                writer.WriteInteger(val);
 
-            buf[0] = 0;
-            ieeeSignature.Slice(fieldSize, fieldSize).CopyTo(bufWriter);
-            Array.Reverse(buf);
-            val = new BigInteger(buf);
-            writer.WriteInteger(val);
+                buf[0] = 0;
+                ieeeSignature.Slice(fieldSize, fieldSize).CopyTo(bufWriter);
+                Array.Reverse(buf);
+                val = new BigInteger(buf);
+                writer.WriteInteger(val);
 #endif
 
-            writer.PopSequence();
+                writer.PopSequence();
 
-            return writer.Encode();
+                return writer.Encode();
+            }
         }
     }
 }

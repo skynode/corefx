@@ -4,9 +4,9 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections;
+using System.Diagnostics;
 using System.IO;
-using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -123,16 +123,18 @@ namespace System.Net.Sockets
             return transmitPackets(socketHandle, packetArray, elementCount, sendSize, overlapped, flags);
         }
 
-        internal static IntPtr[] SocketListToFileDescriptorSet(IList socketList)
+        internal static void SocketListToFileDescriptorSet(IList socketList, Span<IntPtr> fileDescriptorSet)
         {
-            if (socketList == null || socketList.Count == 0)
+            int count;
+            if (socketList == null || (count = socketList.Count) == 0)
             {
-                return null;
+                return;
             }
 
-            IntPtr[] fileDescriptorSet = new IntPtr[socketList.Count + 1];
-            fileDescriptorSet[0] = (IntPtr)socketList.Count;
-            for (int current = 0; current < socketList.Count; current++)
+            Debug.Assert(fileDescriptorSet.Length >= count + 1);
+
+            fileDescriptorSet[0] = (IntPtr)count;
+            for (int current = 0; current < count; current++)
             {
                 if (!(socketList[current] is Socket))
                 {
@@ -141,24 +143,27 @@ namespace System.Net.Sockets
 
                 fileDescriptorSet[current + 1] = ((Socket)socketList[current])._handle.DangerousGetHandle();
             }
-            return fileDescriptorSet;
         }
 
         // Transform the list socketList such that the only sockets left are those
         // with a file descriptor contained in the array "fileDescriptorArray".
-        internal static void SelectFileDescriptor(IList socketList, IntPtr[] fileDescriptorSet)
+        internal static void SelectFileDescriptor(IList socketList, Span<IntPtr> fileDescriptorSet)
         {
             // Walk the list in order.
             //
             // Note that the counter is not necessarily incremented at each step;
             // when the socket is removed, advancing occurs automatically as the
             // other elements are shifted down.
-            if (socketList == null || socketList.Count == 0)
+            int count;
+            if (socketList == null || (count = socketList.Count) == 0)
             {
                 return;
             }
 
-            if ((int)fileDescriptorSet[0] == 0)
+            Debug.Assert(fileDescriptorSet.Length >= count + 1);
+
+            int returnedCount = (int)fileDescriptorSet[0];
+            if (returnedCount == 0)
             {
                 // No socket present, will never find any socket, remove them all.
                 socketList.Clear();
@@ -167,13 +172,13 @@ namespace System.Net.Sockets
 
             lock (socketList)
             {
-                for (int currentSocket = 0; currentSocket < socketList.Count; currentSocket++)
+                for (int currentSocket = 0; currentSocket < count; currentSocket++)
                 {
                     Socket socket = socketList[currentSocket] as Socket;
 
                     // Look for the file descriptor in the array.
                     int currentFileDescriptor;
-                    for (currentFileDescriptor = 0; currentFileDescriptor < (int)fileDescriptorSet[0]; currentFileDescriptor++)
+                    for (currentFileDescriptor = 0; currentFileDescriptor < returnedCount; currentFileDescriptor++)
                     {
                         if (fileDescriptorSet[currentFileDescriptor + 1] == socket._handle.DangerousGetHandle())
                         {
@@ -181,10 +186,11 @@ namespace System.Net.Sockets
                         }
                     }
 
-                    if (currentFileDescriptor == (int)fileDescriptorSet[0])
+                    if (currentFileDescriptor == returnedCount)
                     {
                         // Descriptor not found: remove the current socket and start again.
                         socketList.RemoveAt(currentSocket--);
+                        count--;
                     }
                 }
             }
@@ -285,10 +291,14 @@ namespace System.Net.Sockets
 
         }
 
-        internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle()
+        internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle() =>
+            _handle.GetThreadPoolBoundHandle() ??
+            GetOrAllocateThreadPoolBoundHandleSlow();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandleSlow()
         {
-            // There is a known bug that exists through Windows 7 with UDP and
-            // SetFileCompletionNotificationModes.
+            // There is a known bug that exists through Windows 7 with UDP and SetFileCompletionNotificationModes.
             // So, don't try to enable skipping the completion port on success in this case.
             bool trySkipCompletionPortOnSuccess = !(CompletionPortHelper.PlatformHasUdpIssue && _protocolType == ProtocolType.Udp);
             return _handle.GetOrAllocateThreadPoolBoundHandle(trySkipCompletionPortOnSuccess);

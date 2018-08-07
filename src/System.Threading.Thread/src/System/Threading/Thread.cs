@@ -155,7 +155,7 @@ namespace System.Threading
         {
             get
             {
-                return CurrentThread._principal;
+                return CurrentThread._principal ?? (CurrentThread._principal = AppDomain.CurrentDomain.GetThreadPrincipal());
             }
             set
             {
@@ -272,6 +272,7 @@ namespace System.Threading
             throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
         }
 
+        public static int GetCurrentProcessorId() => RuntimeThread.GetCurrentProcessorId();
         public static AppDomain GetDomain() => AppDomain.CurrentDomain;
         public static int GetDomainID() => GetDomain().Id;
         public override int GetHashCode() => ManagedThreadId;
